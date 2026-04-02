@@ -1,0 +1,4 @@
+**/**.pyc
+frontend/dist
+frontend/node_modules
+backend/src/__pycache__/*.pyc

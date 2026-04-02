@@ -1,0 +1,46 @@
+services:
+  deye-backend:
+    container_name: deye-backend
+    build:
+      context: ..
+      dockerfile: ./docker/Dockerfile.backend
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - MQTT_BROKER=192.168.201.2
+      - MQTT_BROKER_PORT=1883
+      - MQTT_TOPIC_PREFIX=deye
+      - STATUS_READ_INTERVAL_SEC=30
+      - ACCESS_KEY=${ACCESS_KEY:-}
+    labels:
+      - glance.name=Deye Backend
+      - glance.hide=false
+      - glance.icon=di:deye
+      - glance.description=Deye MQTT Backend
+    networks:
+      - deye-network
+
+  deye-frontend:
+    container_name: deye-frontend
+    build:
+      context: ..
+      dockerfile: ./docker/Dockerfile.frontend
+    restart: always
+    ports:
+      - "${FRONTEND_PORT:-8070}:80"
+    environment:
+      - BACKEND_URL=${BACKEND_URL:-http://deye-backend:8000}
+      - BACKEND_WS_URL=${BACKEND_WS_URL:-}
+      - BACKEND_ACCESS_KEY=${BACKEND_ACCESS_KEY:-${ACCESS_KEY:-}}
+    labels:
+      - glance.name=Deye Frontend
+      - glance.hide=false
+      - glance.icon=di:deye
+      - glance.description=Deye Frontend UI
+    networks:
+      - deye-network
+
+networks:
+  deye-network:
+    driver: bridge

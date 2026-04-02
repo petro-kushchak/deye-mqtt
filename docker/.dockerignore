@@ -1,0 +1,17 @@
+**/__pycache__
+**/.venv
+**/.classpath
+**/.env
+**/.git
+**/.gitignore
+**/.project
+**/.settings
+**/.toolstarget
+**/.vs
+**/node_modules
+**/npm-debug.log
+**/obj
+**/docker
+**/frontend/node_modules
+LICENSE
+README.md
