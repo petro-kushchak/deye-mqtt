@@ -23,17 +23,17 @@ DEFAULT_INVERTER_MB_SLAVEID = 1
 DEFAULT_LOOKUP_FILE = 'deye_hybrid.yaml'
 
 class DeyeInverter:
-    def __init__(self, path: str, serial: int | str, host: str, port: int | None = None, lookup_file: str | None = None):
+    def __init__(self, serial: int | str, host: str, port: int | None = None, lookup_file: str | None = None):
         self._modbus = None
         self._serial = serial
-        self.path = path
         self._host = host
         self._port = port if port is not None else DEFAULT_PORT_INVERTER
         self._current_val = None
         self.lookup_file = lookup_file or DEFAULT_LOOKUP_FILE
         self.lock = threading.Lock()
 
-        with open(os.path.join(self.path, self.lookup_file)) as f:
+        module_path = os.path.dirname(os.path.abspath(__file__))
+        with open(os.path.join(module_path, self.lookup_file)) as f:
             self.parameter_definition = yaml.full_load(f)
 
     @property

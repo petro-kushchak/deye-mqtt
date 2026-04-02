@@ -232,7 +232,7 @@ function App() {
                 value={Math.abs(status?.battery_power || 0)}
                 unit="W"
                 color={status?.battery_power < 0 ? '#4caf50' : '#ff9800'}
-                subLabel={`SOC: ${status?.battery_soc || 0}% | ${status?.battery_status || 'Stand-by'}`}
+                subLabel={`SOC: ${status?.battery_soc || 0}% | ${status?.battery_power > 0 ? 'Discharging' : status?.battery_power < 0 ? 'Charging' : 'Stand-by'}`}
               />
             </Grid>
 

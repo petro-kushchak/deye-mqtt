@@ -134,20 +134,6 @@ async def websocket_endpoint(websocket: WebSocket):
     except WebSocketDisconnect:
         manager.disconnect(websocket)
 
-# @app.get("/api/status", response_model=StatusResponse)
-# async def get_status():
-#     if app.state.backend_state.current_status is None:
-#         raise HTTPException(status_code=503, detail="Status not yet available")
-#     return StatusResponse(timestamp=datetime.utcnow().isoformat(), metrics=app.state.backend_state.current_status)
-
-# @app.get("/api/history")
-# async def get_history(hours: int = 1):
-#     if app.state.backend_state.history is None:
-#         raise HTTPException(status_code=503, detail="History not yet available")
-#     cutoff = datetime.utcnow() - timedelta(hours=hours)
-#     recent = [m for ts, m in app.state.backend_state.history if ts >= cutoff]
-#     return {"count": len(recent), "data": recent}
-
 @app.get("/api/version")
 async def get_version_info(
     access_key: Annotated[str | None, Query(alias="access_key")] = None,

@@ -18,27 +18,52 @@ logging.basicConfig(
 )
 log = logging.getLogger("deye_main")
 
+async def find_valid_inverters(config: ServiceConfig) -> list[DeyeInverter]:
+        scanner = InverterScanner()
+        found_inverters = scanner.get_inverters()
+        valid_inverters = []
+        log.info("Found inverters via scan: %s", [inv.serial for inv in found_inverters])
+
+        for inv in found_inverters:
+            inverter = DeyeInverter(
+                serial=inv.serial, host=inv.ipaddress
+            )
+            if not inverter.test():
+                log.warning("Inverter %s at %s failed test connection, skipping", inv.serial, inv.ipaddress)
+                continue
+            valid_inverters.append(inverter)
+        return valid_inverters
+
+async def get_inverter_stats(inverter: DeyeInverter, config: ServiceConfig):
+    try:
+        stats = await inverter.get_statistics_async()
+        mapped_stats = []
+        for entry in stats:
+            mapped_stats_entry = {config.metrics_to_publish[k]: v for k, v in entry.items() if k in config.metrics_to_publish} 
+            extra_calculated_metrics = {k: calc_func(entry) for k, calc_func in config.metrics_to_calculate.items()}
+            mapped_stats_entry.update(extra_calculated_metrics)
+            mapped_stats_entry['serial'] = str(inverter.serial)
+            mapped_stats.append(mapped_stats_entry)
+
+        #check for duplicate entries and remove them
+        unique_stats = []
+        for stat in mapped_stats:
+            if stat not in unique_stats:
+                unique_stats.append(stat)
+        mapped_stats = unique_stats
+
+
+        log.info("Polled inverter: %s, received %d metrics", inverter.serial, len(mapped_stats))
+        return mapped_stats
+    except Exception as e:
+        log.exception("Error polling inverter: %s, error: %s", inverter.serial, e)
+        return None
+    
 async def poll_inverters(inverters: list[DeyeInverter], config: ServiceConfig, mqtt_client: MqttClient):
     while True:
         for inverter in inverters:
             try:
-                stats = await inverter.get_statistics_async()
-                mapped_stats = []
-                for entry in stats:
-                    mapped_stats_entry = {config.metrics_to_publish[k]: v for k, v in entry.items() if k in config.metrics_to_publish} 
-                    extra_calculated_metrics = {k: calc_func(entry) for k, calc_func in config.metrics_to_calculate.items()}
-                    mapped_stats_entry.update(extra_calculated_metrics)
-                    mapped_stats_entry['serial'] = str(inverter.serial)
-                    mapped_stats.append(mapped_stats_entry)
-
-                # if not hasattr(app.state, "backend_state"):
-                #     app.state.backend_state = BackendState()
-                #     app.state.backend_state.current_status = {}
-                #     app.state.backend_state.history = []
-                
-                # app.state.backend_state.current_status[inverter.serial] = mapped_stats
-                # app.state.backend_state.history.append((datetime.utcnow(), {inverter.serial: mapped_stats}))
-
+                mapped_stats = await get_inverter_stats(inverter, config)
                 log.info("Polled inverter: %s, received %d metrics", inverter.serial, len(mapped_stats))
                 
                 if mapped_stats:
@@ -63,7 +88,6 @@ async def mqtt_listener(mqtt_client: MqttClient):
                 if not hasattr(app.state, "backend_state"):
                     app.state.backend_state = BackendState()
                     app.state.backend_state.current_status = {}
-                #     app.state.backend_state.history = []
                 
                 if isinstance(data, list) and len(data) > 0:
                     data[0]['serial'] = serial
@@ -71,7 +95,6 @@ async def mqtt_listener(mqtt_client: MqttClient):
                     data = {'serial': serial, 'value': data}
                 
                 app.state.backend_state.current_status[serial] = data
-                # app.state.backend_state.history.append((datetime.utcnow(), {serial: data}))
                 
                 log.info("MQTT received: %s", topic)
                 
@@ -120,32 +143,28 @@ async def main():
         else:
             log.warning("Failed to connect to configured inverter at %s", config.inverter_ip)
     else:
-        scanner = InverterScanner()
-        found_inverters = scanner.get_inverters()
-        log.info("Found inverters via scan: %s", [inv.serial for inv in found_inverters])
+        valid_inverters = await find_valid_inverters(config)
 
-        for inv in found_inverters:
-            inverter = DeyeInverter(
-                path=os.getcwd(), serial=inv.serial, host=inv.ipaddress
-            )
-            if not inverter.test():
-                log.warning("Inverter %s at %s failed test connection, skipping", inv.serial, inv.ipaddress)
-                continue
-            valid_inverters.append(inverter)
+    # retry to find inverters for a few iterations if none are found, 
+    #  to handle cases where inverters might not be immediately available on startup
+    retry_attempts = 5
+    while not valid_inverters and retry_attempts > 0:
+        log.warning("No valid inverters found, retrying in 5 seconds... (%d attempts left)", retry_attempts)
+        await asyncio.sleep(5)
+        valid_inverters = await find_valid_inverters(config)
+        retry_attempts -= 1
+
 
     if not valid_inverters:
-        log.warning("No valid inverters found, running in MQTT-only mode")
-        await asyncio.gather(
-            web_server.serve(),
-            mqtt_listener(mqtt_client)
-        )
-    else:
-        log.info("Polling valid inverters: %s", [inv.serial for inv in valid_inverters])
-        await asyncio.gather(
-            web_server.serve(),
-            poll_inverters(valid_inverters, config, mqtt_client),
-            mqtt_listener(mqtt_client)
-        )
+        log.error("No valid inverters found after multiple attempts, exiting.")
+        return
+    
+    log.info("Polling valid inverters: %s", [inv.serial for inv in valid_inverters])
+    await asyncio.gather(
+        web_server.serve(),
+        poll_inverters(valid_inverters, config, mqtt_client),
+        mqtt_listener(mqtt_client)
+    )
 
 if __name__ == "__main__":
     asyncio.run(main())
