@@ -3,7 +3,7 @@ import os
 class ServiceConfig:
     def __init__(self):
         self.status_interval: int = int(os.getenv("STATUS_READ_INTERVAL_SEC", 30))
-        self.mqtt_broker: str = os.getenv("MQTT_BROKER", "192.168.201.2")
+        self.mqtt_broker: str = os.getenv("MQTT_BROKER", "192.168.88.2")
         self.mqtt_port: int = int(os.getenv("MQTT_BROKER_PORT", "1883"))
         self.topic_prefix: str = os.getenv("MQTT_TOPIC_PREFIX", "deye")
         self.inverter_ip: str = os.getenv("INVERTER_IP", "")
