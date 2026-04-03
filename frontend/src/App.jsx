@@ -18,6 +18,13 @@ function App() {
   const [connected, setConnected] = useState(false);
   const [lastUpdate, setLastUpdate] = useState(null);
   const [backendVersion, setBackendVersion] = useState(null);
+  const [inverterLastSeen, setInverterLastSeen] = useState({});
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => setTick(t => t + 1), 2000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     fetch('/config.json')
@@ -86,6 +93,7 @@ function App() {
               }
               return updated;
             });
+            setInverterLastSeen(prev => ({ ...prev, [serial]: new Date() }));
             setLastUpdate(new Date());
           }
         } catch (e) {
@@ -130,6 +138,24 @@ function App() {
   };
 
   const inverterStatus = getInverterStatus();
+
+  const getTimeAgo = (date) => {
+    if (!date) return 'Never';
+    const seconds = Math.floor((new Date() - date) / 1000);
+    if (seconds < 5) return 'Just now';
+    if (seconds < 60) return `${seconds}s ago`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+  };
+
+  const isStale = (date) => {
+    if (!date) return true;
+    return (new Date() - date) > 120000;
+  };
 
   if (!config || (!connected && Object.keys(inverters).length === 0)) {
     return (
@@ -326,6 +352,18 @@ function App() {
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Typography variant="body2" sx={{ color: '#616161' }}>Serial</Typography>
                       <Typography variant="body2" sx={{ color: '#212121' }}>{selectedInverter || 'N/A'}</Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography variant="body2" sx={{ color: '#616161' }}>Last Seen</Typography>
+                      <Typography 
+                        variant="body2" 
+                        sx={{ 
+                          color: isStale(inverterLastSeen[selectedInverter]) ? '#f44336' : '#212121',
+                          fontWeight: isStale(inverterLastSeen[selectedInverter]) ? 'bold' : 'normal'
+                        }}
+                      >
+                        {getTimeAgo(inverterLastSeen[selectedInverter])}
+                      </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Typography variant="body2" sx={{ color: '#616161' }}>Work Mode</Typography>

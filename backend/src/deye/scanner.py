@@ -19,7 +19,7 @@ class InverterScanner:
             with socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP) as sock:
                 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                 sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-                sock.settimeout(1.0)
+                sock.settimeout(2.0)
                 # sock.bind(("", 48900))
 
                 sock.sendto(request.encode(), address)
