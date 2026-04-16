@@ -1,19 +1,113 @@
 {
+    "version": "0.2.0",
     "configurations": [
         {
-            "name": "Containers: Python - General",
-            "type": "docker",
+            "name": "Debug Backend",
+            "type": "debugpy",
             "request": "launch",
-            "preLaunchTask": "docker-run: debug",
-            "python": {
-                "pathMappings": [
-                    {
-                        "localRoot": "${workspaceFolder}",
-                        "remoteRoot": "/app"
-                    }
-                ],
-                "projectType": "general"
-            }
+            "module": "uvicorn",
+            "args": [
+                "main:app",
+                "--reload",
+                "--host",
+                "0.0.0.0",
+                "--port",
+                "8000"
+            ],
+            "cwd": "${workspaceFolder}/backend/src",
+            "env": {
+                "MQTT_BROKER": "192.168.201.2",
+                "MQTT_BROKER_PORT": "1883",
+                "MQTT_TOPIC_PREFIX": "deye",
+                "STATUS_READ_INTERVAL_SEC": "30",
+                "INVERTER_IP": "192.168.201.253",
+                "INVERTER_SERIAL": "3510378990",
+                "INVERTER_DEFINITION": "deye_hybrid.yaml"
+            },
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "webRoot": "${workspaceFolder}"
+        },
+        {
+            "name": "Debug Backend (Direct)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/backend/src/main.py",
+            "cwd": "${workspaceFolder}/backend/src",
+            "env": {
+                "MQTT_BROKER": "192.168.201.2",
+                "MQTT_BROKER_PORT": "1883",
+                "MQTT_TOPIC_PREFIX": "deye",
+                "STATUS_READ_INTERVAL_SEC": "30",
+                "INVERTER_IP": "192.168.201.253",
+                "INVERTER_SERIAL": "3510378990",
+                "INVERTER_DEFINITION": "deye_hybrid.yaml"
+            },
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
+            "name": "Debug Backend (with access key)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "uvicorn",
+            "args": [
+                "main:app",
+                "--reload",
+                "--host",
+                "0.0.0.0",
+                "--port",
+                "8000"
+            ],
+            "cwd": "${workspaceFolder}/backend/src",
+            "env": {
+                "MQTT_BROKER": "192.168.201.2",
+                "MQTT_BROKER_PORT": "1883",
+                "MQTT_TOPIC_PREFIX": "deye",
+                "STATUS_READ_INTERVAL_SEC": "30",
+                "INVERTER_IP": "192.168.201.253",
+                "INVERTER_SERIAL": "3510378990",
+                "INVERTER_DEFINITION": "deye_hybrid.yaml",
+                "ACCESS_KEY": "your-access-key-here"
+            },
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
+            "name": "Debug Inverter Scanner Only",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "python",
+            "args": [
+                "-c",
+                "from deye.scanner import InverterScanner; s = InverterScanner(); print(s.get_inverters())"
+            ],
+            "cwd": "${workspaceFolder}/backend/src",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Debug Config Test",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "python",
+            "args": [
+                "-c",
+                "from config import ServiceConfig; c = ServiceConfig(); print(f'IP: {c.inverter_ip}, Serial: {c.inverter_serial}')"
+            ],
+            "cwd": "${workspaceFolder}/backend/src",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Debug Inverter Test",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "python",
+            "args": [
+                "-c",
+                "from deye.deye import DeyeInverter; inv = DeyeInverter(3510378990, '192.168.201.253'); print(f'Test result: {inv.test()}')"
+            ],
+            "cwd": "${workspaceFolder}/backend/src",
+            "console": "integratedTerminal"
         }
     ]
 }

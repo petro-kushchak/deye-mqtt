@@ -2,25 +2,35 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
-			"type": "docker-build",
-			"label": "docker-build",
-			"platform": "python",
-			"dockerBuild": {
-				"tag": "deye:latest",
-				"dockerfile": "${workspaceFolder}/Dockerfile",
-				"context": "${workspaceFolder}",
-				"pull": true
-			}
+			"label": "Install Dependencies",
+			"type": "shell",
+			"command": "cd ${workspaceFolder}/backend && pip install -r requirements.txt",
+			"problemMatcher": []
 		},
 		{
-			"type": "docker-run",
-			"label": "docker-run: debug",
-			"dependsOn": [
-				"docker-build"
-			],
-			"python": {
-				"file": "src/main.py"
-			}
+			"label": "Run Tests",
+			"type": "shell",
+			"command": "cd ${workspaceFolder}/backend/src && python -m pytest",
+			"problemMatcher": ["$python"]
+		},
+		{
+			"label": "Build Docker Backend",
+			"type": "shell",
+			"command": "cd ${workspaceFolder}/docker && docker compose build deye-backend",
+			"problemMatcher": []
+		},
+		{
+			"label": "Start Docker Backend",
+			"type": "shell",
+			"command": "cd ${workspaceFolder}/docker && docker compose up -d deye-backend",
+			"problemMatcher": []
+		},
+		{
+			"label": "View Docker Logs",
+			"type": "shell",
+			"command": "docker logs deye-backend -f",
+			"problemMatcher": [],
+			"dependsOn": ["Start Docker Backend"]
 		}
 	]
 }
