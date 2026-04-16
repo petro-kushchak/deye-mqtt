@@ -182,7 +182,7 @@ function App() {
                 color={connected ? 'success' : 'error'}
                 sx={{ mr: 1 }}
               />
-              Solar Dashboard{config?.facilityName && ` - ${config.facilityName}`}
+              Solar Dashboard{config?.facilityName && `: ${config.facilityName}`}
             </Typography>
             <Chip 
               label={inverterStatus.label} 
