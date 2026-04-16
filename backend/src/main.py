@@ -26,7 +26,7 @@ async def find_valid_inverters(config: ServiceConfig) -> list[DeyeInverter]:
 
         for inv in found_inverters:
             inverter = DeyeInverter(
-                serial=inv.serial, host=inv.ipaddress
+                serial=inv.serial, host=inv.ipaddress, lookup_file=config.inverter_definition
             )
             if not inverter.test():
                 log.warning("Inverter %s at %s failed test connection, skipping", inv.serial, inv.ipaddress)
@@ -133,9 +133,9 @@ async def main():
     if config.inverter_ip and config.inverter_serial:
         log.info("Using configured inverter: IP=%s, Serial=%s", config.inverter_ip, config.inverter_serial)
         inverter = DeyeInverter(
-            path=os.getcwd(), 
             serial=config.inverter_serial, 
-            host=config.inverter_ip
+            host=config.inverter_ip,
+            lookup_file=config.inverter_definition
         )
         if inverter.test():
             valid_inverters.append(inverter)

@@ -8,6 +8,7 @@ class ServiceConfig:
         self.topic_prefix: str = os.getenv("MQTT_TOPIC_PREFIX", "deye")
         self.inverter_ip: str = os.getenv("INVERTER_IP", "")
         self.inverter_serial: int = int(os.getenv("INVERTER_SERIAL", 12345678))
+        self.inverter_definition: str = os.getenv("INVERTER_DEFINITION", "deye_hybrid.yaml")
         self.metrics_to_publish = {
                 "PV1 Power": 'pv1_power',
                 "PV2 Power": 'pv2_power',

@@ -1,5 +1,6 @@
 {
   "backendUrl": "${BACKEND_URL}",
   "backendWsUrl": "${BACKEND_WS_URL}",
-  "accessKey": "${BACKEND_ACCESS_KEY}"
+  "accessKey": "${BACKEND_ACCESS_KEY}",
+  "facilityName": "${FACILITY_NAME}"
 }

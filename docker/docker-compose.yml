@@ -33,6 +33,7 @@ services:
       - BACKEND_URL=${BACKEND_URL:-http://deye-backend:8000}
       - BACKEND_WS_URL=${BACKEND_WS_URL:-}
       - BACKEND_ACCESS_KEY=${BACKEND_ACCESS_KEY:-${ACCESS_KEY:-}}
+      - FACILITY_NAME=${FACILITY_NAME:-}
     labels:
       - glance.name=Deye Frontend
       - glance.hide=false
