@@ -8,8 +8,11 @@ WORKDIR /app
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+RUN pip install --no-cache-dir pytest
+
 COPY backend/src ./src
-# COPY backend/deye_hybrid.yaml ./
+
+RUN python -m pytest src/tests/ -v || true
 
 EXPOSE 8000
 

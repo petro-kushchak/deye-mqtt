@@ -1,19 +1,29 @@
 import logging
+from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
-from typing import List, Set, Annotated
+from typing import Any, Annotated
 import json
 import os
+import re
 
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Query, Header, WebSocketException
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Query, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s [%(module)s:%(lineno)d] %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
-log = logging.getLogger("deye_main")
+from models import HealthResponse, InverterHealth
+
+log = logging.getLogger("deye_web")
+
+START_TIME = datetime.now()
+
+
+def get_uptime_seconds() -> float:
+    return (datetime.now() - START_TIME).total_seconds()
+
+
+def set_start_time() -> None:
+    global START_TIME
+    START_TIME = datetime.now()
 
 
 def get_version() -> str:
@@ -23,6 +33,11 @@ def get_version() -> str:
             return f.read().strip()
     except FileNotFoundError:
         return 'unknown'
+
+
+def sanitize_topic_component(component: str) -> str:
+    return re.sub(r'[^a-zA-Z0-9_-]', '_', str(component))
+
 
 ACCESS_KEY = os.environ.get("ACCESS_KEY", "")
 
@@ -48,29 +63,66 @@ async def verify_ws_access_key(websocket: WebSocket) -> bool:
     if not access_key:
         return False
     return access_key == ACCESS_KEY
-    
-log = logging.getLogger("deye_main")
-    
+
+
+async def lifespan(app: FastAPI) -> None:
+    from main import start_background_tasks
+    await start_background_tasks(app)
+    yield
+    from main import stop_background_tasks
+    await stop_background_tasks()
+
+
 class BackendState:
     def __init__(self):
         self.current_status: dict[str, list[dict]] = {}
         self.history: list[tuple[datetime, dict]] = []
+        self.health_tracker: dict = {}
+
 
 HISTORY_RETENTION = timedelta(hours=24)
+
 
 class StatusResponse(BaseModel):
     timestamp: str
     metrics: dict[str, list[dict]]
 
-app = FastAPI(title="Deye Inverter Status API")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+def get_application() -> FastAPI:
+    application = FastAPI(
+        title="Deye Inverter Status API",
+        lifespan=lifespan,
+    )
+
+    application.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    return application
+
+
+app = get_application()
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("web_server:app", host="0.0.0.0", port=8000, reload=True)
+
+
+from contextlib import asynccontextmanager
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    from main import start_background_tasks
+    await start_background_tasks(app)
+    yield
+    from main import stop_background_tasks
+    await stop_background_tasks()
 
 class ConnectionManager:
     def __init__(self):
@@ -115,19 +167,16 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 @app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
+async def websocket_endpoint(websocket: WebSocket) -> None:
     access_key = websocket.query_params.get("access_key")
     if not verify_access_key(access_key):
         log.warning("WebSocket connection rejected: invalid access key from %s", websocket.client)
         await websocket.close(code=4001, reason="Invalid access key")
         return
-    
+
     log.info("New WebSocket connection: %s", websocket.client)
     cached_payload = manager.get_cached_payload()
-    await websocket.accept()
-    manager.active_connections.add(websocket)
-    if cached_payload:
-        await websocket.send_text(cached_payload)
+    await manager.connect(websocket, cached_payload)
     try:
         while True:
             await websocket.receive_text()
@@ -143,6 +192,33 @@ async def get_version_info(
     if not verify_access_key(key):
         raise HTTPException(status_code=401, detail="Invalid access key")
     return {"version": get_version()}
+
+
+@app.get("/health")
+async def health_check() -> HealthResponse:
+    mqtt_connected = getattr(app.state, "mqtt_connected", False)
+    inverter_health = []
+    if hasattr(app.state, "backend_state"):
+        health_tracker = getattr(app.state.backend_state, "health_tracker", {})
+        for health in health_tracker.values():
+            inverter_health.append(
+                InverterHealth(
+                    serial=health.serial,
+                    host=health.host,
+                    is_connected=health.is_connected,
+                    consecutive_failures=health.consecutive_failures,
+                    last_success=health.last_success,
+                    last_failure=health.last_failure,
+                )
+            )
+
+    return HealthResponse(
+        status="ok" if mqtt_connected or inverter_health else "degraded",
+        mqtt_connected=mqtt_connected,
+        inverters=inverter_health,
+        uptime_seconds=get_uptime_seconds(),
+    )
+
 
 async def broadcast_status():
     if app.state.backend_state.current_status:

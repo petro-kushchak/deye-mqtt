@@ -62,7 +62,7 @@ class TestServiceConfig(unittest.TestCase):
             "Battery Power",
             "Battery SOC",
             "Battery Current",
-            "Grid Power",
+            "Total Grid Power",
             "Total Load Power",
             "Running Status",
             "Work Mode",

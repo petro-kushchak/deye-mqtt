@@ -61,7 +61,8 @@ class TestInverterScanner(unittest.TestCase):
         inverter = InverterInfo('192.168.1.1', 'AA:BB:CC:DD:EE:FF', 12345)
         scanner1._inverters.append(inverter)
         
-        self.assertEqual(len(scanner2._inverters), 1)
+        self.assertEqual(len(scanner2._inverters), 0)
+        self.assertEqual(len(scanner1._inverters), 1)
 
 
 if __name__ == '__main__':
