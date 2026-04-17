@@ -1,4 +1,5 @@
 import { AppBar, Toolbar, Typography, Chip, Tabs, Tab, Box } from '@mui/material';
+import SolarPowerIcon from '@mui/icons-material/SolarPower';
 import { useInverter } from '../context/InverterContext';
 import { useTheme } from '../context/ThemeContext';
 import { getRunningStatusLabel } from '../utils/formatters';
@@ -9,21 +10,30 @@ function Header() {
   const { colors } = useTheme();
 
   const runningStatus = currentInverter?.['Running Status'] ?? 'Stand-by';
+  const { cardAlt: bgColor, border: borderColor } = colors;
 
   return (
-    <AppBar position="fixed" elevation={1} sx={{ bgcolor: colors.cardAlt, zIndex: (theme) => theme.zIndex.appBar }}>
-      <Toolbar>
-        <Typography variant="h6" sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', gap: 2, color: colors.text }}>
+    <AppBar 
+      position="fixed" 
+      elevation={0}
+      sx={{ 
+        bgcolor: bgColor, 
+        borderBottom: `1px solid ${borderColor}`,
+        zIndex: (theme) => theme.zIndex.appBar,
+      }}
+    >
+      <Toolbar sx={{ bgcolor: bgColor }}>
+        <Typography variant="h6" sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', gap: 1, color: colors.text }}>
           <Chip
             size="small"
             label={connected ? 'Connected' : 'Disconnected'}
             sx={{ 
-              mr: 1, 
               bgcolor: connected ? colors.success : colors.error,
               color: '#fff'
             }}
           />
-          Solar Dashboard{config?.facilityName && `: ${config.facilityName}`}
+          <SolarPowerIcon sx={{ color: colors.warning, ml: 1 }} />
+          {config?.facilityName? config?.facilityName:  'Solar Dashboard' }
         </Typography>
         <Chip
           label={getRunningStatusLabel(runningStatus)}

@@ -66,18 +66,31 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const colors = mode === 'dark' ? darkColors : lightColors;
 
-  document.body.style.backgroundColor = colors.background;
-  document.body.style.color = colors.text;
-
   const toggleTheme = () => {
-    setMode((prev) => (prev === 'light' ? 'dark' : 'light'));
+    const newMode = mode === 'light' ? 'dark' : 'light';
+    const newColors = newMode === 'dark' ? darkColors : lightColors;
+    
+    // Update immediately before React renders
+    document.body.style.backgroundColor = newColors.background;
+    document.body.style.color = newColors.text;
+    document.documentElement.style.backgroundColor = newColors.background;
+    document.querySelector('header')?.setAttribute('style', `background-color: ${newColors.cardAlt} !important`);
+    document.querySelector('.MuiToolbar-root')?.setAttribute('style', `background-color: ${newColors.cardAlt} !important`);
+    
+    setMode(newMode);
   };
 
   useEffect(() => {
+    requestAnimationFrame(() => {
+      document.body.style.backgroundColor = colors.background;
+      document.body.style.color = colors.text;
+      document.documentElement.style.backgroundColor = colors.background;
+    });
+  }, [colors]);
+
+  useEffect(() => {
     localStorage.setItem(THEME_STORAGE_KEY, mode);
-    document.body.style.backgroundColor = colors.background;
-    document.body.style.color = colors.text;
-  }, [mode, colors]);
+  }, [mode]);
 
   return (
     <ThemeContext.Provider value={{ mode, toggleTheme, colors }}>

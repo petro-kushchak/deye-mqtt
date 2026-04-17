@@ -1,10 +1,13 @@
+import { useState, useCallback } from 'react';
 import { ThemeProvider as MuiThemeProvider, CssBaseline } from '@mui/material';
-import { Box, Container, Grid, Typography, Alert, CircularProgress } from '@mui/material';
+import { Box, Container, Grid, Typography, Alert, CircularProgress, Collapse, IconButton } from '@mui/material';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import SolarPowerIcon from '@mui/icons-material/SolarPower';
 import BatteryChargingFullIcon from '@mui/icons-material/BatteryChargingFull';
 import GridOnIcon from '@mui/icons-material/GridOn';
 import HomeIcon from '@mui/icons-material/Home';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { lightTheme, darkTheme } from './theme';
 import { ThemeProvider as AppThemeProvider, useTheme } from './context/ThemeContext';
 import { InverterProvider, useInverter } from './context/InverterContext';
@@ -18,6 +21,20 @@ import { formatPower, getGridStatus, getBatteryStatusLabel, getBatteryStatusColo
 function Dashboard() {
   const { hasMetrics, currentInverter } = useInverter();
   const { colors } = useTheme();
+  const [openPower, setOpenPower] = useState(() => localStorage.getItem('deye-section-power') !== 'false');
+  const [openPV, setOpenPV] = useState(() => localStorage.getItem('deye-section-pv') !== 'false');
+  const [openStats, setOpenStats] = useState(() => localStorage.getItem('deye-section-stats') !== 'false');
+
+  const SectionHeader = ({ title, open, onToggle, storageKey }: { title: string; open: boolean; onToggle: () => void; storageKey: string }) => (
+    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+      <Typography variant="h5" sx={{ flexGrow: 1 }}>
+        {title}
+      </Typography>
+      <IconButton onClick={() => { onToggle(); localStorage.setItem(storageKey, (!open).toString()); }} size="small" sx={{ color: colors.textSecondary }}>
+        {open ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+      </IconButton>
+    </Box>
+  );
 
   if (!hasMetrics) {
     return (
@@ -40,111 +57,121 @@ function Dashboard() {
     <>
       <Grid container spacing={3}>
         <Grid item xs={12}>
-          <Typography variant="h5" sx={{ mb: 2 }}>
-            Power Overview
-          </Typography>
+          <SectionHeader title="Power Overview" open={openPower} onToggle={() => setOpenPower(!openPower)} storageKey="deye-section-power" />
         </Grid>
 
-        <Grid item xs={12} md={6} lg={3}>
-          <StatCard
-            icon={<SolarPowerIcon sx={{ fontSize: 40 }} />}
-            label="Solar Production"
-            value={formatPower(currentInverter?.pv_power)}
-            unit="W"
-            color={colors.warning}
-            subLabel={`PV1: ${formatPower(currentInverter?.pv1_power)}W | PV2: ${formatPower(currentInverter?.pv2_power)}W`}
-          />
-        </Grid>
+        <Collapse in={openPower} sx={{ width: '100%' }}>
+          <Grid container spacing={3} sx={{ pl: 2, pr: 2 }}>
+            <Grid item xs={12} md={6} lg={3}>
+              <StatCard
+                icon={<SolarPowerIcon sx={{ fontSize: 40 }} />}
+                label="Solar Production"
+                value={formatPower(currentInverter?.pv_power)}
+                unit="W"
+                color={colors.warning}
+                subLabel={`PV1: ${formatPower(currentInverter?.pv1_power)}W | PV2: ${formatPower(currentInverter?.pv2_power)}W`}
+              />
+            </Grid>
 
-        <Grid item xs={12} md={6} lg={3}>
-          <StatCard
-            icon={<BatteryChargingFullIcon sx={{ fontSize: 40 }} />}
-            label="Battery"
-            value={formatPower(Math.abs(batteryPower))}
-            unit="W"
-            color={batteryColor}
-            subLabel={`SOC: ${formatPower(currentInverter?.battery_soc)}% | ${batteryLabel}`}
-          />
-        </Grid>
+            <Grid item xs={12} md={6} lg={3}>
+              <StatCard
+                icon={<BatteryChargingFullIcon sx={{ fontSize: 40 }} />}
+                label="Battery"
+                value={formatPower(Math.abs(batteryPower))}
+                unit="W"
+                color={batteryColor}
+                subLabel={`SOC: ${formatPower(currentInverter?.battery_soc)}% | ${batteryLabel}`}
+              />
+            </Grid>
 
-        <Grid item xs={12} md={6} lg={3}>
-          <StatCard
-            icon={<GridOnIcon sx={{ fontSize: 40 }} />}
-            label="Grid"
-            value={formatPower(Math.abs(currentInverter?.grid_power ?? 0))}
-            unit="W"
-            color={gridStatus.color}
-            subLabel={gridStatus.label}
-          />
-        </Grid>
+            <Grid item xs={12} md={6} lg={3}>
+              <StatCard
+                icon={<GridOnIcon sx={{ fontSize: 40 }} />}
+                label="Grid"
+                value={formatPower(Math.abs(currentInverter?.grid_power ?? 0))}
+                unit="W"
+                color={gridStatus.color}
+                subLabel={gridStatus.label}
+              />
+            </Grid>
 
-        <Grid item xs={12} md={6} lg={3}>
-          <StatCard
-            icon={<HomeIcon sx={{ fontSize: 40 }} />}
-            label="Home Load"
-            value={formatPower(currentInverter?.total_load_power)}
-            unit="W"
-            color={colors.info}
-            subLabel="Current consumption"
-          />
-        </Grid>
+            <Grid item xs={12} md={6} lg={3}>
+              <StatCard
+                icon={<HomeIcon sx={{ fontSize: 40 }} />}
+                label="Home Load"
+                value={formatPower(currentInverter?.total_load_power)}
+                unit="W"
+                color={colors.info}
+                subLabel="Current consumption"
+              />
+            </Grid>
 
-        <Grid item xs={12} xl={8}>
-          <EnergyFlow data={currentInverter ?? {}} />
-        </Grid>
+            <Grid item xs={12} xl={8}>
+              <EnergyFlow data={currentInverter ?? {}} />
+            </Grid>
 
-        <PVStrings />
-
-        <Grid item xs={12} xl={4}>
-          <SystemInfo />
-        </Grid>
+            <Grid item xs={12} xl={4}>
+              <SystemInfo />
+            </Grid>
+          </Grid>
+        </Collapse>
 
         <Grid item xs={12}>
-          <Typography variant="h5" sx={{ mt: 2 }}>
-            Energy Statistics
-          </Typography>
+          <SectionHeader title="PV Strings" open={openPV} onToggle={() => setOpenPV(!openPV)} storageKey="deye-section-pv" />
         </Grid>
 
-        <Grid item xs={12} md={6} lg={3}>
-          <StatCard
-            icon={<SolarPowerIcon sx={{ fontSize: 40 }} />}
-            label="Daily Production"
-            value={formatPower(currentInverter?.['daily_production'])}
-            unit="kWh"
-            color={colors.warning}
-          />
+        <Collapse in={openPV} sx={{ width: '100%' }}>
+          <PVStrings />
+        </Collapse>
+
+        <Grid item xs={12}>
+          <SectionHeader title="Energy Statistics" open={openStats} onToggle={() => setOpenStats(!openStats)} storageKey="deye-section-stats" />
         </Grid>
 
-        <Grid item xs={12} md={6} lg={3}>
-          <StatCard
-            icon={<SolarPowerIcon sx={{ fontSize: 40 }} />}
-            label="Total Production"
-            value={formatPower(((currentInverter?.['total_production'] ?? 0) / 1000))}
-            unit="MWh"
-            color={colors.warning}
-            subLabel="All time"
-          />
-        </Grid>
+        <Collapse in={openStats} sx={{ width: '100%' }}>
+          <Grid container spacing={3} sx={{ pl: 2, pr: 2 }}>
+            <Grid item xs={12} md={6} lg={3}>
+              <StatCard
+                icon={<SolarPowerIcon sx={{ fontSize: 40 }} />}
+                label="Daily Production"
+                value={formatPower(currentInverter?.['daily_production'])}
+                unit="kWh"
+                color={colors.warning}
+              />
+            </Grid>
 
-        <Grid item xs={12} md={6} lg={3}>
-          <StatCard
-            icon={<HomeIcon sx={{ fontSize: 40 }} />}
-            label="Daily Load"
-            value={formatPower(currentInverter?.['daily_load_consumption'])}
-            unit="kWh"
-            color={colors.info}
-          />
-        </Grid>
+            <Grid item xs={12} md={6} lg={3}>
+              <StatCard
+                icon={<SolarPowerIcon sx={{ fontSize: 40 }} />}
+                label="Total Production"
+                value={formatPower(((currentInverter?.['total_production'] ?? 0) / 1000))}
+                unit="MWh"
+                color={colors.warning}
+                subLabel="All time"
+              />
+            </Grid>
 
-        <Grid item xs={12} md={6} lg={3}>
-          <StatCard
-            icon={<BatteryChargingFullIcon sx={{ fontSize: 40 }} />}
-            label="Daily Battery Charge"
-            value={formatPower(currentInverter?.['daily_battery_charge'])}
-            unit="kWh"
-            color={colors.success}
-          />
-        </Grid>
+            <Grid item xs={12} md={6} lg={3}>
+              <StatCard
+                icon={<HomeIcon sx={{ fontSize: 40 }} />}
+                label="Daily Load"
+                value={formatPower(currentInverter?.['daily_load_consumption'])}
+                unit="kWh"
+                color={colors.info}
+              />
+            </Grid>
+
+            <Grid item xs={12} md={6} lg={3}>
+              <StatCard
+                icon={<BatteryChargingFullIcon sx={{ fontSize: 40 }} />}
+                label="Daily Battery Charge"
+                value={formatPower(currentInverter?.['daily_battery_charge'])}
+                unit="kWh"
+                color={colors.success}
+              />
+            </Grid>
+          </Grid>
+        </Collapse>
       </Grid>
     </>
   );

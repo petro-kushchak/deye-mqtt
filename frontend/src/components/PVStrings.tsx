@@ -56,15 +56,10 @@ function PVStrings() {
   );
 
   return (
-    <>
-      <Grid item xs={12}>
-        <Typography variant="h5" sx={{ mb: 2, mt: 2 }}>
-          PV String Details
-        </Typography>
-      </Grid>
+    <Grid container spacing={3}>
       {renderPVCard('PV1', pv1Data)}
       {renderPVCard('PV2', pv2Data)}
-    </>
+    </Grid>
   );
 }
 
