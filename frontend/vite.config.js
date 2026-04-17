@@ -10,6 +10,9 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    optimizeDeps: {
+      include: ['@mui/material', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
+    },
     server: {
       proxy: {
         '/api': apiUrl,
