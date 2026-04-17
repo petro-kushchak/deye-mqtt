@@ -6,5 +6,16 @@
     "files.exclude": {
         "**/__pycache__": true,
         "**/*.pyc": true
+    },
+    "typescript.tsdk": "frontend/node_modules/typescript/lib",
+    "javascript.suggest.autoImports": true,
+    "typescript.suggest.autoImports": true,
+    "[typescript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": true
+    },
+    "[typescriptreact]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": true
     }
 }

@@ -1,0 +1,6 @@
+ {
+   "backendUrl": "https://deye.riviera6.pp.ua",
+   "backendWsUrl": "wss://deye.riviera6.pp.ua/ws",
+   "accessKey": "cedf8286050da0f5b42236d23a0cacdc21cc61a0bbaeb3153258556270720468",
+   "facilityName": "Riviera6"
+ }

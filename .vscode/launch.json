@@ -2,6 +2,58 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Debug Frontend",
+            "type": "chrome",
+            "request": "launch",
+            "url": "http://localhost:5173",
+            "webRoot": "${workspaceFolder}/frontend",
+            "preLaunchTask": "Frontend: Dev Server",
+            "timeout": 30000
+        },
+        {
+            "name": "Run Frontend (No Debug)",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "dev", "--", "--host"],
+            "cwd": "${workspaceFolder}/frontend",
+            "console": "integratedTerminal",
+            "skipFiles": ["<node_internals>/**"]
+        },
+        {
+            "name": "Debug Frontend Tests",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "test", "--", "--run"],
+            "cwd": "${workspaceFolder}/frontend",
+            "console": "integratedTerminal",
+            "env": {
+                "CI": "true"
+            }
+        },
+        {
+            "name": "Debug Frontend (Edge)",
+            "type": "msedge",
+            "request": "launch",
+            "url": "http://localhost:5173",
+            "webRoot": "${workspaceFolder}/frontend",
+            "preLaunchTask": "Frontend: Dev Server",
+            "timeout": 30000
+        },
+        {
+            "name": "Debug Frontend Tests",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "test", "--", "--run"],
+            "cwd": "${workspaceFolder}/frontend",
+            "console": "integratedTerminal",
+            "env": {
+                "CI": "true"
+            }
+        },
+        {
             "name": "Debug Backend",
             "type": "debugpy",
             "request": "launch",

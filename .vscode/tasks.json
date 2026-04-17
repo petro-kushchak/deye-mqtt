@@ -2,6 +2,31 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
+			"label": "Frontend: Install Dependencies",
+			"type": "shell",
+			"command": "cd ${workspaceFolder}/frontend && npm install",
+			"problemMatcher": []
+		},
+		{
+			"label": "Frontend: Dev Server",
+			"type": "shell",
+			"command": "cd ${workspaceFolder}/frontend && npm run dev",
+			"problemMatcher": [],
+			"isBackground": true
+		},
+		{
+			"label": "Frontend: Run Tests",
+			"type": "shell",
+			"command": "cd ${workspaceFolder}/frontend && npm test",
+			"problemMatcher": []
+		},
+		{
+			"label": "Frontend: Build",
+			"type": "shell",
+			"command": "cd ${workspaceFolder}/frontend && npm run build",
+			"problemMatcher": []
+		},
+		{
 			"label": "Install Dependencies",
 			"type": "shell",
 			"command": "cd ${workspaceFolder}/backend && pip install -r requirements.txt",
