@@ -1,5 +1,5 @@
 import { AppBar, Toolbar, Typography, Chip, Tabs, Tab, Box } from '@mui/material';
-import SolarPowerIcon from '@mui/icons-material/SolarPower';
+import HomeIcon from '@mui/icons-material/Home';
 import { useInverter } from '../context/InverterContext';
 import { useTheme } from '../context/ThemeContext';
 import { getRunningStatusLabel } from '../utils/formatters';
@@ -32,7 +32,7 @@ function Header() {
               color: '#fff'
             }}
           />
-          <SolarPowerIcon sx={{ color: colors.warning, ml: 1 }} />
+          <HomeIcon sx={{ color: colors.warning, ml: 1 }} />
           {config?.facilityName? config?.facilityName:  'Solar Dashboard' }
         </Typography>
         <Chip
