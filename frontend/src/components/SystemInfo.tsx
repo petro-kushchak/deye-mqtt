@@ -81,6 +81,10 @@ function SystemInfo() {
             <Typography variant="body2" sx={{ color: colors.text }}>{formatFrequency(currentInverter.grid_frequency)}</Typography>
           </Box>
           <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+            <Typography variant="body2" sx={{ color: colors.textSecondary }}>Load Voltage</Typography>
+            <Typography variant="body2" sx={{ color: colors.text }}>{formatVoltage(currentInverter.load_voltage)} V</Typography>
+          </Box>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
             <Typography variant="body2" sx={{ color: colors.textSecondary }}>Backend Version</Typography>
             <Typography variant="body2" sx={{ color: colors.text }}>{backendVersion ?? '...'}</Typography>
           </Box>

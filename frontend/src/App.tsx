@@ -49,6 +49,12 @@ function Dashboard() {
   }
 
   const gridStatus = getGridStatus(currentInverter?.grid_power ?? 0);
+  const phases = currentInverter?.phases ?? 3;
+  const loadSubLabel = [
+    ...(phases >= 1 ? [`L1: ${formatPower(currentInverter?.load_power_l1)}W`] : []),
+    ...(phases >= 2 ? [`L2: ${formatPower(currentInverter?.load_power_l2)}W`] : []),
+    ...(phases >= 3 ? [`L3: ${formatPower(currentInverter?.load_power_l3)}W`] : []),
+  ].join(' | ');
   const batteryPower = currentInverter?.battery_power ?? 0;
   const batteryLabel = getBatteryStatusLabel(batteryPower);
   const batteryColor = getBatteryStatusColor(batteryPower);
@@ -102,7 +108,7 @@ function Dashboard() {
                 value={formatPower(currentInverter?.total_load_power)}
                 unit="W"
                 color={colors.info}
-                subLabel="Current consumption"
+                subLabel={loadSubLabel || "Current consumption"}
               />
             </Grid>
 

@@ -87,6 +87,7 @@ async def get_inverter_stats(
             }
             mapped_stats_entry.update(extra_calculated_metrics)
             mapped_stats_entry["serial"] = str(inverter.serial)
+            mapped_stats_entry["phases"] = inverter.phases
             mapped_stats.append(mapped_stats_entry)
 
         unique_stats = {json.dumps(s, sort_keys=True): s for s in mapped_stats}

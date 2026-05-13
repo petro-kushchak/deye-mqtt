@@ -37,6 +37,10 @@ class GridMetrics(BaseModel):
 
 class LoadMetrics(BaseModel):
     total_load_power: float = 0
+    load_power_l1: float = 0
+    load_power_l2: float = 0
+    load_power_l3: float = 0
+    load_voltage: float = 0
     daily_load_consumption: float = 0
 
 
@@ -57,6 +61,7 @@ class InverterMetrics(
     SystemMetrics,
 ):
     serial: str = ""
+    phases: int = 3
     timestamp: datetime = Field(default_factory=datetime.now)
 
     @classmethod

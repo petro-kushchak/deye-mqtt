@@ -43,10 +43,15 @@ class DeyeInverter:
         self.lookup_file = lookup_file or DEFAULT_LOOKUP_FILE
         self.lock = threading.Lock()
         self.parameter_definition = _load_parameter_definition(self.lookup_file)
+        self._phases = self.parameter_definition.get("phases", 3)
 
     @property
     def serial(self) -> int | str:
         return self._serial
+
+    @property
+    def phases(self) -> int:
+        return self._phases
 
     @property
     def is_connected(self) -> bool:

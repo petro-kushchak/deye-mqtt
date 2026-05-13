@@ -3,6 +3,7 @@ import type { InverterMetrics, UseInverterDataReturn } from '../types';
 
 interface RawMetrics {
   serial?: string;
+  phases?: number;
   pv_power?: number;
   pv1_power?: number;
   pv2_power?: number;
@@ -14,12 +15,17 @@ interface RawMetrics {
   battery_power?: number;
   grid_power?: number;
   total_load_power?: number;
+  load_power_l1?: number;
+  load_power_l2?: number;
+  load_power_l3?: number;
+  load_voltage?: number;
   battery_status?: string;
   [key: string]: unknown;
 }
 
 const enrichMetrics = (metrics: RawMetrics): InverterMetrics => ({
   serial: metrics.serial ?? 'unknown',
+  phases: metrics.phases ?? 3,
   pv_power: metrics.pv_power ?? 0,
   pv1_power: metrics.pv1_power ?? 0,
   pv2_power: metrics.pv2_power ?? 0,
@@ -31,6 +37,10 @@ const enrichMetrics = (metrics: RawMetrics): InverterMetrics => ({
   battery_power: metrics.battery_power ?? 0,
   grid_power: metrics.grid_power ?? 0,
   total_load_power: metrics.total_load_power ?? 0,
+  load_power_l1: metrics.load_power_l1 ?? 0,
+  load_power_l2: metrics.load_power_l2 ?? 0,
+  load_power_l3: metrics.load_power_l3 ?? 0,
+  load_voltage: metrics.load_voltage ?? 0,
   battery_status: metrics.battery_status ?? 'Stand-by',
   'Running Status': (metrics['Running Status'] as string) ?? 'Stand-by',
   work_mode: metrics.work_mode as string | undefined,

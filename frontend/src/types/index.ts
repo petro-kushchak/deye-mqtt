@@ -1,5 +1,6 @@
 export interface InverterMetrics {
   serial: string;
+  phases: number;
   pv_power: number;
   pv1_power: number;
   pv2_power: number;
@@ -11,6 +12,10 @@ export interface InverterMetrics {
   battery_power: number;
   grid_power: number;
   total_load_power: number;
+  load_power_l1: number;
+  load_power_l2: number;
+  load_power_l3: number;
+  load_voltage: number;
   battery_status: string;
   'Running Status': string;
   work_mode?: string;
