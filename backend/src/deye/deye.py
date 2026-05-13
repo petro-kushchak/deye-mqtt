@@ -2,6 +2,7 @@ import asyncio
 import logging
 import os
 import threading
+import time
 from typing import Any
 
 import yaml
@@ -101,35 +102,47 @@ class DeyeInverter:
         params.parse(response, start, length)
 
     def get_statistics(self) -> list[dict]:
-        status = []
+        max_retries = 2
+        retry_delay = 2
         with self.lock:
-            try:
-                if not self.is_connected:
-                    self.connect()
+            for attempt in range(max_retries + 1):
+                status = []
+                try:
+                    if not self.is_connected:
+                        self.connect()
 
-                requests = self.parameter_definition["requests"]
-                params = ParameterParser(self.parameter_definition)
-                for request in requests:
-                    start = request["start"]
-                    end = request["end"]
-                    mb_fc = request["mb_functioncode"]
-                    self.send_request(params, start, end, mb_fc)
-                    status.append(params.get_result())
-                self._status_connection = 1
-            except Exception as e:
-                log.warning(
-                    "Querying inverter %s at %s:%s failed on connection start with exception [%s: %s]",
-                    self._serial,
-                    self._host,
-                    self._port,
-                    type(e).__name__,
-                    e,
-                )
-                self._status_connection = 0
-                self._current_val = {}
-                self.disconnect()
+                    requests = self.parameter_definition["requests"]
+                    params = ParameterParser(self.parameter_definition)
+                    for request in requests:
+                        start = request["start"]
+                        end = request["end"]
+                        mb_fc = request["mb_functioncode"]
+                        self.send_request(params, start, end, mb_fc)
+                        status.append(params.get_result())
+                    self._status_connection = 1
+                    return status
+                except Exception as e:
+                    log.warning(
+                        "Querying inverter %s at %s:%s failed (attempt %d/%d) with exception [%s: %s]",
+                        self._serial,
+                        self._host,
+                        self._port,
+                        attempt + 1,
+                        max_retries + 1,
+                        type(e).__name__,
+                        e,
+                    )
+                    self._status_connection = 0
+                    self._current_val = {}
+                    self.disconnect()
 
-            return status
+                    if attempt < max_retries:
+                        log.info("Retrying in %d seconds...", retry_delay)
+                        time.sleep(retry_delay)
+                    else:
+                        log.error("All retry attempts exhausted for inverter %s", self._serial)
+
+            return []
 
     async def get_statistics_async(self) -> list[dict]:
         loop = asyncio.get_running_loop()

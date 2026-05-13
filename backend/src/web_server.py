@@ -212,8 +212,11 @@ async def health_check() -> HealthResponse:
                 )
             )
 
+    all_inverters_healthy = all(h.is_connected for h in inverter_health) if inverter_health else True
+    health_status = "ok" if mqtt_connected and all_inverters_healthy else "degraded"
+
     return HealthResponse(
-        status="ok" if mqtt_connected or inverter_health else "degraded",
+        status=health_status,
         mqtt_connected=mqtt_connected,
         inverters=inverter_health,
         uptime_seconds=get_uptime_seconds(),
