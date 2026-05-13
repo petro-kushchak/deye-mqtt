@@ -109,6 +109,11 @@ const EnergyFlow = ({ data }: EnergyFlowProps) => {
     battery_soc = 0,
     grid_power = 0,
     total_load_power = 0,
+    phases = 3,
+    load_voltage = 0,
+    load_power_l1 = 0,
+    load_power_l2 = 0,
+    load_power_l3 = 0,
   } = data;
 
   const absBatteryPower = Math.abs(battery_power);
@@ -217,6 +222,7 @@ const EnergyFlow = ({ data }: EnergyFlowProps) => {
               unit="W"
               color={colors.info}
               colors={colors}
+              subValue={`${load_voltage.toFixed(1)}V${phases > 1 ? ` | L1: ${load_power_l1}W L2: ${load_power_l2}W L3: ${load_power_l3}W` : ''}`}
             />
           </Box>
 
