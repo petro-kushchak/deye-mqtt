@@ -101,6 +101,7 @@ class DeyeInverter:
         params.parse(response, start, length)
 
     def get_statistics(self) -> list[dict]:
+        status = []
         with self.lock:
             try:
                 if not self.is_connected:
@@ -108,7 +109,6 @@ class DeyeInverter:
 
                 requests = self.parameter_definition["requests"]
                 params = ParameterParser(self.parameter_definition)
-                status = []
                 for request in requests:
                     start = request["start"]
                     end = request["end"]
