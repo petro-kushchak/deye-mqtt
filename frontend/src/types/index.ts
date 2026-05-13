@@ -54,6 +54,14 @@ export interface WebSocketState {
   lastMessage: unknown;
 }
 
+export interface DataPoint {
+  timestamp: Date;
+  pv_power: number;
+  battery_power: number;
+  total_load_power: number;
+  grid_power: number;
+}
+
 export interface UseConfigReturn {
   config: AppConfig | null;
   loading: boolean;

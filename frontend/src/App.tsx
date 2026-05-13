@@ -12,6 +12,7 @@ import { lightTheme, darkTheme } from './theme';
 import { ThemeProvider as AppThemeProvider, useTheme } from './context/ThemeContext';
 import { InverterProvider, useInverter } from './context/InverterContext';
 import EnergyFlow from './components/EnergyFlow';
+import EnergyHistory from './components/EnergyHistory';
 import StatCard from './components/StatCard';
 import Header from './components/Header';
 import PVStrings from './components/PVStrings';
@@ -22,6 +23,7 @@ function Dashboard() {
   const { hasMetrics, currentInverter } = useInverter();
   const { colors } = useTheme();
   const [openPower, setOpenPower] = useState(() => localStorage.getItem('deye-section-power') !== 'false');
+  const [openHistory, setOpenHistory] = useState(() => localStorage.getItem('deye-section-history') !== 'false');
   const [openPV, setOpenPV] = useState(() => localStorage.getItem('deye-section-pv') !== 'false');
   const [openStats, setOpenStats] = useState(() => localStorage.getItem('deye-section-stats') !== 'false');
 
@@ -121,6 +123,11 @@ function Dashboard() {
             </Grid>
           </Grid>
         </Collapse>
+
+        <Grid item xs={12}>
+          <SectionHeader title="Energy History" open={openHistory} onToggle={() => setOpenHistory(!openHistory)} storageKey="deye-section-history" />
+        </Grid>
+        <EnergyHistory open={openHistory} />
 
         <Grid item xs={12}>
           <SectionHeader title="PV Strings" open={openPV} onToggle={() => setOpenPV(!openPV)} storageKey="deye-section-pv" />

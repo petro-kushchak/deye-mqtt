@@ -26,6 +26,7 @@ interface NodeBoxProps {
   colors: {
     text: string;
     textSecondary: string;
+    backgroundAlt: string;
   };
 }
 
@@ -135,14 +136,14 @@ const EnergyFlow = ({ data }: EnergyFlowProps) => {
   };
 
   return (
-    <Card sx={{ height: '100%', minHeight: 360,
+    <Card sx={{ height: '100%',
       transition: 'transform 0.2s, box-shadow 0.2s',
       '&:hover': {
         transform: 'translateY(-2px)',
         boxShadow: `0 4px 20px ${colors.info}30`,
       },
     }}>
-      <CardContent sx={{ height: '100%', pb: '16px !important' }}>
+      <CardContent sx={{ pb: '16px !important' }}>
         <Typography variant="h6" sx={{ mb: 2, textAlign: 'center', color: colors.textSecondary }}>
           Energy Flow
         </Typography>
@@ -150,9 +151,8 @@ const EnergyFlow = ({ data }: EnergyFlowProps) => {
         <Box sx={{
           display: 'grid',
           gridTemplateColumns: '1fr auto 1fr',
-          gridTemplateRows: 'auto 1fr auto',
           gap: 1,
-          height: 'calc(100% - 50px)',
+          mb: 2,
           alignItems: 'center',
         }}>
           <Box sx={{ gridColumn: 1, gridRow: 1, display: 'flex', justifyContent: 'center' }}>
