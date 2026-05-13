@@ -1,6 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import EnergyFlow from '../components/EnergyFlow';
+import { ThemeProvider } from '../context/ThemeContext';
+
+function renderWithTheme(element: React.ReactElement) {
+  return render(<ThemeProvider>{element}</ThemeProvider>);
+}
 
 describe('EnergyFlow', () => {
   const mockData = {
@@ -14,7 +19,7 @@ describe('EnergyFlow', () => {
   };
 
   it('should render energy flow diagram', () => {
-    render(<EnergyFlow data={mockData} />);
+    renderWithTheme(<EnergyFlow data={mockData} />);
 
     expect(screen.getByText('Energy Flow')).toBeDefined();
     expect(screen.getByText('PV')).toBeDefined();
@@ -25,7 +30,7 @@ describe('EnergyFlow', () => {
   });
 
   it('should display power values', () => {
-    render(<EnergyFlow data={mockData} />);
+    renderWithTheme(<EnergyFlow data={mockData} />);
 
     expect(screen.getByText('5000')).toBeDefined();
     expect(screen.getByText('1000')).toBeDefined();
@@ -33,25 +38,25 @@ describe('EnergyFlow', () => {
   });
 
   it('should show SOC percentage', () => {
-    render(<EnergyFlow data={mockData} />);
+    renderWithTheme(<EnergyFlow data={mockData} />);
 
     expect(screen.getByText('SOC: 75%')).toBeDefined();
   });
 
   it('should show grid subvalue (Export/Import/Idle)', () => {
-    render(<EnergyFlow data={mockData} />);
+    renderWithTheme(<EnergyFlow data={mockData} />);
 
     expect(screen.getByText('Export')).toBeDefined();
   });
 
   it('should handle empty data', () => {
-    const { container } = render(<EnergyFlow data={{}} />);
+    const { container } = renderWithTheme(<EnergyFlow data={{}} />);
 
     expect(container.querySelector('.MuiCard-root')).toBeDefined();
   });
 
   it('should display PV breakdown', () => {
-    render(<EnergyFlow data={mockData} />);
+    renderWithTheme(<EnergyFlow data={mockData} />);
 
     expect(screen.getByText('2500W + 2500W')).toBeDefined();
   });

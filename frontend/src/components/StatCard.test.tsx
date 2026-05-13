@@ -3,10 +3,15 @@ import { render, screen } from '@testing-library/react';
 import { vi } from 'vitest';
 import StatCard from '../components/StatCard';
 import SolarPowerIcon from '@mui/icons-material/SolarPower';
+import { ThemeProvider } from '../context/ThemeContext';
+
+function renderWithTheme(element: React.ReactElement) {
+  return render(<ThemeProvider>{element}</ThemeProvider>);
+}
 
 describe('StatCard', () => {
   it('should render with label and value', () => {
-    render(
+    renderWithTheme(
       <StatCard
         icon={<SolarPowerIcon />}
         label="Solar Production"
@@ -22,7 +27,7 @@ describe('StatCard', () => {
   });
 
   it('should render with subLabel', () => {
-    render(
+    renderWithTheme(
       <StatCard
         icon={<SolarPowerIcon />}
         label="Battery"
@@ -37,7 +42,7 @@ describe('StatCard', () => {
   });
 
   it('should format number value with toFixed', () => {
-    render(
+    renderWithTheme(
       <StatCard
         icon={<SolarPowerIcon />}
         label="Power"
@@ -51,7 +56,7 @@ describe('StatCard', () => {
   });
 
   it('should render string value as-is', () => {
-    render(
+    renderWithTheme(
       <StatCard
         icon={<SolarPowerIcon />}
         label="Status"

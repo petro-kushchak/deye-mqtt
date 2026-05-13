@@ -8,6 +8,12 @@ function SystemInfo() {
   const { selectedInverter, currentInverter, inverterLastSeen, config, apiUrl, accessKey } = useInverter();
   const { colors } = useTheme();
   const [backendVersion, setBackendVersion] = useState<string | null>(null);
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => setTick(t => t + 1), 2000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     if (!config) return;
