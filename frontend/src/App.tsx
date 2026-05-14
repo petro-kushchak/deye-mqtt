@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { ThemeProvider as MuiThemeProvider, CssBaseline } from '@mui/material';
 import { Box, Container, Grid, Typography, Alert, CircularProgress, Collapse, IconButton } from '@mui/material';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
@@ -201,7 +201,6 @@ function LoadingScreen() {
 
 function AppContent() {
   const { configLoading, connected, hasMetrics, inverterSerials } = useInverter();
-  const { colors } = useTheme();
 
   if (configLoading || (!connected && !hasMetrics)) {
     return (

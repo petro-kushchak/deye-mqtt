@@ -88,7 +88,11 @@ function SystemInfo() {
           </Box>
           <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
             <Typography variant="body2" sx={{ color: colors.textSecondary }}>Load Voltage</Typography>
-            <Typography variant="body2" sx={{ color: colors.text }}>{formatVoltage(currentInverter.load_voltage)} V</Typography>
+            <Typography variant="body2" sx={{ color: colors.text }}>
+              {currentInverter.phases && currentInverter.phases > 1
+                ? `L1: ${formatVoltage(currentInverter.load_voltage_l1)}V L2: ${formatVoltage(currentInverter.load_voltage_l2)}V L3: ${formatVoltage(currentInverter.load_voltage_l3)}V`
+                : `${formatVoltage(currentInverter.load_voltage)} V`}
+            </Typography>
           </Box>
           <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
             <Typography variant="body2" sx={{ color: colors.textSecondary }}>Backend Version</Typography>

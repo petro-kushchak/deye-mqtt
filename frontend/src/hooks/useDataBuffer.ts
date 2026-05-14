@@ -1,42 +1,54 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import type { InverterMetrics, DataPoint } from '../types';
 
-const STORAGE_KEY = 'deye-energy-history';
 const MAX_HOURS = 24;
+const RANGE_STORAGE_KEY = 'deye-history-range';
 
-const loadBuffer = (): DataPoint[] => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as Array<{ timestamp: number; pv_power: number; battery_power: number; total_load_power: number; grid_power: number }>;
-    const cutoff = Date.now() - MAX_HOURS * 60 * 60 * 1000;
-    return parsed
-      .filter(p => p.timestamp >= cutoff)
-      .map(p => ({ timestamp: new Date(p.timestamp), pv_power: p.pv_power, battery_power: p.battery_power, total_load_power: p.total_load_power, grid_power: p.grid_power }));
-  } catch {
-    return [];
-  }
-};
+function getMinuteBucket(date: Date): number {
+  return Math.floor(date.getTime() / 60000);
+}
 
-const saveBuffer = (buffer: DataPoint[]) => {
-  try {
-    const cutoff = Date.now() - MAX_HOURS * 60 * 60 * 1000;
-    const cleaned = buffer.filter(p => p.timestamp.getTime() >= cutoff);
-    const serialized = cleaned.map(p => ({ timestamp: p.timestamp.getTime(), pv_power: p.pv_power, battery_power: p.battery_power, total_load_power: p.total_load_power, grid_power: p.grid_power }));
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(serialized));
-  } catch {
-    // localStorage full or unavailable
-  }
-};
+interface HistoryEntry {
+  t: number;
+  s: string;
+  p: number;
+  b: number;
+  l: number;
+  g: number;
+}
 
-export function useDataBuffer() {
-  const [timeRange, setTimeRange] = useState(1);
-  const [dataBuffer, setDataBuffer] = useState<DataPoint[]>(loadBuffer);
+export function useDataBuffer(apiUrl: string, accessKey: string) {
+  const [timeRange, setTimeRange] = useState(() => {
+    const saved = localStorage.getItem(RANGE_STORAGE_KEY);
+    return saved ? parseInt(saved, 10) : 1;
+  });
+  const [dataBuffer, setDataBuffer] = useState<DataPoint[]>([]);
   const lastRef = useRef<Pick<InverterMetrics, 'pv_power' | 'battery_power' | 'total_load_power' | 'grid_power'> | null>(null);
 
   useEffect(() => {
-    saveBuffer(dataBuffer);
-  }, [dataBuffer]);
+    localStorage.setItem(RANGE_STORAGE_KEY, String(timeRange));
+  }, [timeRange]);
+
+  const historyUrl = `${apiUrl}/api/history?hours=24${accessKey ? `&access_key=${accessKey}` : ''}`;
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(historyUrl)
+      .then(res => res.json())
+      .then((data: HistoryEntry[]) => {
+        if (cancelled) return;
+        const points: DataPoint[] = data.map(entry => ({
+          timestamp: new Date(entry.t),
+          pv_power: entry.p,
+          battery_power: entry.b,
+          total_load_power: entry.l,
+          grid_power: entry.g,
+        }));
+        setDataBuffer(points);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [historyUrl]);
 
   const addDataPoint = useCallback((metrics: Partial<InverterMetrics>) => {
     const { pv_power, battery_power, total_load_power, grid_power } = metrics;
@@ -52,10 +64,20 @@ export function useDataBuffer() {
 
     lastRef.current = { pv_power: pv, battery_power: bat, total_load_power: load, grid_power: grid };
 
+    const now = new Date();
+    const bucket = getMinuteBucket(now);
+
     setDataBuffer(prev => {
+      const lastIdx = prev.length - 1;
+      if (lastIdx >= 0 && getMinuteBucket(prev[lastIdx].timestamp) === bucket) {
+        const updated = [...prev];
+        updated[lastIdx] = { timestamp: now, pv_power: pv, battery_power: bat, total_load_power: load, grid_power: grid };
+        return updated;
+      }
+
       const cutoff = Date.now() - MAX_HOURS * 60 * 60 * 1000;
       const cleaned = prev.filter(p => p.timestamp.getTime() >= cutoff);
-      cleaned.push({ timestamp: new Date(), pv_power: pv, battery_power: bat, total_load_power: load, grid_power: grid });
+      cleaned.push({ timestamp: now, pv_power: pv, battery_power: bat, total_load_power: load, grid_power: grid });
       return cleaned;
     });
   }, []);

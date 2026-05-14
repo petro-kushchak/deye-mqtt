@@ -1,4 +1,4 @@
-import { AppBar, Toolbar, Typography, Chip, Tabs, Tab, Box } from '@mui/material';
+import { AppBar, Toolbar, Typography, Chip, Tabs, Tab } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
 import { useInverter } from '../context/InverterContext';
 import { useTheme } from '../context/ThemeContext';

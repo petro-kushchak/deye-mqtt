@@ -16,6 +16,9 @@ export interface InverterMetrics {
   load_power_l2: number;
   load_power_l3: number;
   load_voltage: number;
+  load_voltage_l1: number;
+  load_voltage_l2: number;
+  load_voltage_l3: number;
   battery_status: string;
   'Running Status': string;
   work_mode?: string;

@@ -83,6 +83,61 @@ class BackendState:
 HISTORY_RETENTION = timedelta(hours=24)
 
 
+class HistoryStore:
+    def __init__(self):
+        self._entries: list[dict] = []
+
+    def add(self, serial: str, metrics: dict) -> None:
+        now = datetime.now()
+        minute_bucket = now.replace(second=0, microsecond=0)
+
+        for entry in reversed(self._entries):
+            if entry["serial"] == serial:
+                prev_ts = entry["timestamp"]
+                if isinstance(prev_ts, datetime) and prev_ts.replace(second=0, microsecond=0) == minute_bucket:
+                    entry.update({
+                        "pv_power": metrics.get("pv_power", 0),
+                        "battery_power": metrics.get("battery_power", 0),
+                        "total_load_power": metrics.get("total_load_power", 0),
+                        "grid_power": metrics.get("grid_power", 0),
+                        "timestamp": now,
+                    })
+                    return
+                break
+
+        self._entries.append({
+            "serial": serial,
+            "timestamp": now,
+            "pv_power": metrics.get("pv_power", 0),
+            "battery_power": metrics.get("battery_power", 0),
+            "total_load_power": metrics.get("total_load_power", 0),
+            "grid_power": metrics.get("grid_power", 0),
+        })
+
+        cutoff = datetime.now() - HISTORY_RETENTION
+        self._entries = [e for e in self._entries if e["timestamp"] >= cutoff]
+
+    def get_filtered(self, hours: int = 1, serial: str | None = None) -> list[dict]:
+        cutoff = datetime.now() - timedelta(hours=hours)
+        result = [e for e in self._entries if e["timestamp"] >= cutoff]
+        if serial:
+            result = [e for e in result if e["serial"] == serial]
+        return [
+            {
+                "t": int(e["timestamp"].timestamp() * 1000),
+                "s": e["serial"],
+                "p": e["pv_power"],
+                "b": e["battery_power"],
+                "l": e["total_load_power"],
+                "g": e["grid_power"],
+            }
+            for e in result
+        ]
+
+
+history_store = HistoryStore()
+
+
 class StatusResponse(BaseModel):
     timestamp: str
     metrics: dict[str, list[dict]]
@@ -140,8 +195,12 @@ class ConnectionManager:
         log.info("Connection closed: %s", websocket.client)
         self.active_connections.discard(websocket)
 
-    def cache_data(self, serial: str, data: list):
+    def cache_data(self, serial: str, data: list | dict):
         self.cached_data[serial] = data
+        if isinstance(data, list) and len(data) > 0:
+            history_store.add(serial, data[0] if isinstance(data[0], dict) else {})
+        elif isinstance(data, dict):
+            history_store.add(serial, data)
 
     def get_cached_payload(self) -> str | None:
         if self.cached_data:
@@ -221,6 +280,19 @@ async def health_check() -> HealthResponse:
         inverters=inverter_health,
         uptime_seconds=get_uptime_seconds(),
     )
+
+
+@app.get("/api/history")
+async def get_history(
+    hours: int = Query(1, ge=1, le=24),
+    serial: str | None = Query(None),
+    access_key: Annotated[str | None, Query(alias="access_key")] = None,
+    x_access_key: Annotated[str | None, Header()] = None,
+):
+    key = access_key or x_access_key
+    if not verify_access_key(key):
+        raise HTTPException(status_code=401, detail="Invalid access key")
+    return history_store.get_filtered(hours=hours, serial=serial)
 
 
 async def broadcast_status():

@@ -11,8 +11,8 @@ interface EnergyHistoryProps {
 
 export default function EnergyHistory({ open }: EnergyHistoryProps) {
   const { colors } = useTheme();
-  const { currentInverter } = useInverter();
-  const { addDataPoint, filteredData, timeRange, setTimeRange } = useDataBuffer();
+  const { currentInverter, apiUrl, accessKey } = useInverter();
+  const { addDataPoint, filteredData, timeRange, setTimeRange } = useDataBuffer(apiUrl, accessKey);
   const prevRef = useRef(currentInverter);
 
   useEffect(() => {
