@@ -100,6 +100,7 @@ class HistoryStore:
                         "battery_power": metrics.get("battery_power", 0),
                         "total_load_power": metrics.get("total_load_power", 0),
                         "grid_power": metrics.get("grid_power", 0),
+                        "battery_soc": metrics.get("battery_soc", entry.get("battery_soc", 0)),
                         "timestamp": now,
                     })
                     return
@@ -112,6 +113,7 @@ class HistoryStore:
             "battery_power": metrics.get("battery_power", 0),
             "total_load_power": metrics.get("total_load_power", 0),
             "grid_power": metrics.get("grid_power", 0),
+            "battery_soc": metrics.get("battery_soc", 0),
         })
 
         cutoff = datetime.now() - HISTORY_RETENTION
@@ -130,6 +132,7 @@ class HistoryStore:
                 "b": e["battery_power"],
                 "l": e["total_load_power"],
                 "g": e["grid_power"],
+                "c": e.get("battery_soc", 0),
             }
             for e in result
         ]

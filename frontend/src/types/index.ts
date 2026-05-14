@@ -63,6 +63,7 @@ export interface DataPoint {
   battery_power: number;
   total_load_power: number;
   grid_power: number;
+  battery_soc: number;
 }
 
 export interface UseConfigReturn {

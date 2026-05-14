@@ -20,6 +20,7 @@ const METRICS: MetricDef[] = [
   { key: 'PV', label: 'PV', color: '#ff9800' },
   { key: 'Load', label: 'Load', color: '#1976d2' },
   { key: 'Battery', label: 'Battery', color: '#388e3c' },
+  { key: 'SOC', label: 'SOC', color: '#9c27b0' },
 ];
 
 const TOGGLE_KEY = 'deye-metrics';
@@ -70,7 +71,7 @@ const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?:
       <Typography variant="caption" sx={{ display: 'block', mb: 0.5, fontWeight: 600 }}>{time}</Typography>
       {payload.map((entry, i) => (
         <Typography key={i} variant="caption" sx={{ display: 'block', color: entry.color }}>
-          {entry.name}: {entry.value.toFixed(0)} W
+          {entry.name}: {entry.value.toFixed(0)} {entry.name === 'SOC' ? '%' : 'W'}
         </Typography>
       ))}
     </Box>
@@ -99,6 +100,7 @@ export default function EnergyChart({ data, timeRange, onTimeRangeChange }: Ener
     PV: d.pv_power,
     Load: d.total_load_power,
     Battery: d.battery_power,
+    SOC: d.battery_soc,
   }));
 
   return (
@@ -159,17 +161,27 @@ export default function EnergyChart({ data, timeRange, onTimeRangeChange }: Ener
             tick={{ fontSize: 11 }}
           />
           <YAxis
+            yAxisId="power"
             tickFormatter={(v) => `${v}W`}
             stroke={colors.textSecondary}
+            tick={{ fontSize: 11 }}
+          />
+          <YAxis
+            yAxisId="soc"
+            orientation="right"
+            domain={[0, 100]}
+            tickFormatter={(v) => `${v}%`}
+            stroke="#9c27b0"
             tick={{ fontSize: 11 }}
           />
           <Tooltip content={<CustomTooltip />} />
           {METRICS.map(m => (
             <Line
               key={m.key}
+              yAxisId={m.key === 'SOC' ? 'soc' : 'power'}
               type="monotone"
               dataKey={m.key}
-              stroke={m.key === 'Load' ? (isDark ? '#64b5f6' : '#1976d2') : m.key === 'Battery' ? (isDark ? '#81c784' : '#388e3c') : m.color}
+              stroke={m.key === 'Load' ? (isDark ? '#64b5f6' : '#1976d2') : m.key === 'Battery' ? (isDark ? '#81c784' : '#388e3c') : m.key === 'SOC' ? '#9c27b0' : m.color}
               dot={false}
               strokeWidth={2}
               hide={!visibleMetrics.has(m.key)}
