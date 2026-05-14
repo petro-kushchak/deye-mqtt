@@ -1,4 +1,5 @@
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useState, useCallback } from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Box, CardContent, Select, MenuItem, FormControl, Typography } from '@mui/material';
 import { useTheme } from '../context/ThemeContext';
 import type { DataPoint } from '../types';
@@ -8,6 +9,35 @@ interface EnergyChartProps {
   timeRange: number;
   onTimeRangeChange: (hours: number) => void;
 }
+
+interface MetricDef {
+  key: string;
+  label: string;
+  color: string;
+}
+
+const METRICS: MetricDef[] = [
+  { key: 'PV', label: 'PV', color: '#ff9800' },
+  { key: 'Load', label: 'Load', color: '#1976d2' },
+  { key: 'Battery', label: 'Battery', color: '#388e3c' },
+];
+
+const TOGGLE_KEY = 'deye-metrics';
+
+const loadToggles = (): Set<string> => {
+  try {
+    const raw = localStorage.getItem(TOGGLE_KEY);
+    if (!raw) return new Set(METRICS.map(m => m.key));
+    const parsed = JSON.parse(raw) as string[];
+    return new Set(parsed);
+  } catch {
+    return new Set(METRICS.map(m => m.key));
+  }
+};
+
+const saveToggles = (keys: Set<string>) => {
+  localStorage.setItem(TOGGLE_KEY, JSON.stringify([...keys]));
+};
 
 const formatTime = (date: Date) => {
   const h = date.getHours().toString().padStart(2, '0');
@@ -52,6 +82,16 @@ const rangeOptions = [1, 2, 3, 6, 12, 24];
 export default function EnergyChart({ data, timeRange, onTimeRangeChange }: EnergyChartProps) {
   const { colors } = useTheme();
   const isDark = colors.background === '#121212';
+  const [visibleMetrics, setVisibleMetrics] = useState<Set<string>>(loadToggles);
+
+  const toggleMetric = useCallback((key: string) => {
+    setVisibleMetrics(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      saveToggles(next);
+      return next;
+    });
+  }, []);
 
   const chartData = data.map(d => ({
     time: d.timestamp.getTime(),
@@ -63,10 +103,33 @@ export default function EnergyChart({ data, timeRange, onTimeRangeChange }: Ener
 
   return (
     <CardContent sx={{ pt: 0 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-        <Typography variant="subtitle2" sx={{ color: colors.textSecondary }}>
-          History
-        </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1, flexWrap: 'wrap', gap: 0.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography variant="subtitle2" sx={{ color: colors.textSecondary }}>
+            History
+          </Typography>
+          {METRICS.map(m => (
+            <Box
+              key={m.key}
+              onClick={() => toggleMetric(m.key)}
+              sx={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 0.3,
+                cursor: 'pointer',
+                opacity: visibleMetrics.has(m.key) ? 1 : 0.35,
+                transition: 'opacity 0.15s',
+                userSelect: 'none',
+                '&:hover': { opacity: visibleMetrics.has(m.key) ? 0.8 : 0.5 },
+              }}
+            >
+              <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: m.color }} />
+              <Typography variant="caption" sx={{ fontSize: '0.7rem', color: colors.text }}>
+                {m.label}
+              </Typography>
+            </Box>
+          ))}
+        </Box>
         <FormControl size="small" sx={{ minWidth: 80 }}>
           <Select
             value={timeRange}
@@ -101,12 +164,17 @@ export default function EnergyChart({ data, timeRange, onTimeRangeChange }: Ener
             tick={{ fontSize: 11 }}
           />
           <Tooltip content={<CustomTooltip />} />
-          <Legend
-            wrapperStyle={{ fontSize: '12px', color: colors.text }}
-          />
-          <Line type="monotone" dataKey="PV" stroke="#ff9800" dot={false} strokeWidth={2} />
-          <Line type="monotone" dataKey="Load" stroke={isDark ? '#64b5f6' : '#1976d2'} dot={false} strokeWidth={2} />
-          <Line type="monotone" dataKey="Battery" stroke={isDark ? '#81c784' : '#388e3c'} dot={false} strokeWidth={2} />
+          {METRICS.map(m => (
+            <Line
+              key={m.key}
+              type="monotone"
+              dataKey={m.key}
+              stroke={m.key === 'Load' ? (isDark ? '#64b5f6' : '#1976d2') : m.key === 'Battery' ? (isDark ? '#81c784' : '#388e3c') : m.color}
+              dot={false}
+              strokeWidth={2}
+              hide={!visibleMetrics.has(m.key)}
+            />
+          ))}
         </LineChart>
       </ResponsiveContainer>
     </CardContent>
