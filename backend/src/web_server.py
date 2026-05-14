@@ -5,6 +5,7 @@ from typing import Any, Annotated
 import json
 import os
 import re
+import atexit
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Query, Header
 from fastapi.middleware.cors import CORSMiddleware
@@ -81,11 +82,54 @@ class BackendState:
 
 
 HISTORY_RETENTION = timedelta(hours=24)
+HISTORY_FILE = os.environ.get("HISTORY_FILE", os.path.join(os.path.dirname(__file__), "data", "history.json"))
+
+
+def _serialize(entries: list[dict]) -> list[dict]:
+    return [
+        {k: v.isoformat() if isinstance(v, datetime) else v for k, v in e.items()}
+        for e in entries
+    ]
+
+
+def _deserialize(entries: list[dict]) -> list[dict]:
+    result = []
+    for e in entries:
+        entry = dict(e)
+        ts = entry.get("timestamp")
+        if isinstance(ts, str):
+            entry["timestamp"] = datetime.fromisoformat(ts)
+        result.append(entry)
+    return result
 
 
 class HistoryStore:
-    def __init__(self):
+    def __init__(self, file_path: str = HISTORY_FILE):
+        self._file_path = file_path
         self._entries: list[dict] = []
+        self._load()
+        atexit.register(self._save)
+
+    def _load(self) -> None:
+        try:
+            if os.path.exists(self._file_path):
+                with open(self._file_path, "r") as f:
+                    raw = json.load(f)
+                self._entries = _deserialize(raw)
+                cutoff = datetime.now() - HISTORY_RETENTION
+                self._entries = [e for e in self._entries if e["timestamp"] >= cutoff]
+                log.info("Loaded %d history entries from %s", len(self._entries), self._file_path)
+        except Exception as e:
+            log.warning("Failed to load history from %s: %s", self._file_path, e)
+            self._entries = []
+
+    def _save(self) -> None:
+        try:
+            os.makedirs(os.path.dirname(self._file_path), exist_ok=True)
+            with open(self._file_path, "w") as f:
+                json.dump(_serialize(self._entries), f)
+        except Exception as e:
+            log.warning("Failed to save history to %s: %s", self._file_path, e)
 
     def add(self, serial: str, metrics: dict) -> None:
         now = datetime.now()
@@ -103,6 +147,7 @@ class HistoryStore:
                         "battery_soc": metrics.get("battery_soc", entry.get("battery_soc", 0)),
                         "timestamp": now,
                     })
+                    self._save()
                     return
                 break
 
@@ -118,6 +163,7 @@ class HistoryStore:
 
         cutoff = datetime.now() - HISTORY_RETENTION
         self._entries = [e for e in self._entries if e["timestamp"] >= cutoff]
+        self._save()
 
     def get_filtered(self, hours: int = 1, serial: str | None = None) -> list[dict]:
         cutoff = datetime.now() - timedelta(hours=hours)
