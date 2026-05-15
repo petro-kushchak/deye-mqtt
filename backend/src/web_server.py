@@ -166,10 +166,16 @@ class HistoryStore:
         self._save()
 
     def get_filtered(self, hours: int = 1, serial: str | None = None) -> list[dict]:
-        cutoff = datetime.now() - timedelta(hours=hours)
-        result = [e for e in self._entries if e["timestamp"] >= cutoff]
-        if serial:
-            result = [e for e in result if e["serial"] == serial]
+        if hours == 0:
+            result = self._entries[:]
+            if serial:
+                result = [e for e in result if e["serial"] == serial]
+            result = result[-1:] if result else []
+        else:
+            cutoff = datetime.now() - timedelta(hours=hours)
+            result = [e for e in self._entries if e["timestamp"] >= cutoff]
+            if serial:
+                result = [e for e in result if e["serial"] == serial]
         return [
             {
                 "t": int(e["timestamp"].timestamp() * 1000),
@@ -333,7 +339,7 @@ async def health_check() -> HealthResponse:
 
 @app.get("/api/history")
 async def get_history(
-    hours: int = Query(1, ge=1, le=24),
+    hours: int = Query(1, ge=0, le=24),
     serial: str | None = Query(None),
     access_key: Annotated[str | None, Query(alias="access_key")] = None,
     x_access_key: Annotated[str | None, Header()] = None,

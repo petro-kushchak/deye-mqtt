@@ -115,12 +115,14 @@ class TestHistoryStore(unittest.TestCase):
         result = store.get_filtered(hours=24)
         self.assertEqual(len(result), 1)
 
-    def test_get_filtered_empty_when_outside_window(self):
+    def test_get_filtered_returns_last_entry_when_hours_zero(self):
         store = self._make_store()
         store.add("SERIAL1", {"pv_power": 5000, "battery_power": 0, "total_load_power": 3000, "grid_power": 0, "battery_soc": 50})
 
         result = store.get_filtered(hours=0)
-        self.assertEqual(len(result), 0)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["s"], "SERIAL1")
+        self.assertEqual(result[0]["p"], 5000)
 
     def test_get_filtered_by_serial(self):
         store = self._make_store()
