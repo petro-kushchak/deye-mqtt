@@ -5,7 +5,7 @@ import { useTheme } from '../context/ThemeContext';
 import { formatVoltage, formatTemperature, formatFrequency, getTimeAgo, isStale } from '../utils/formatters';
 
 function SystemInfo() {
-  const { selectedInverter, currentInverter, inverterLastSeen, config, apiUrl, accessKey } = useInverter();
+  const { currentFacility, selectedFacility, configs } = useInverter();
   const { colors } = useTheme();
   const [backendVersion, setBackendVersion] = useState<string | null>(null);
   const [, setTick] = useState(0);
@@ -16,16 +16,20 @@ function SystemInfo() {
   }, []);
 
   useEffect(() => {
-    if (!config) return;
+    if (!currentFacility) return;
+    const config = currentFacility.config;
+    const apiUrl = config.backendUrl;
+    const accessKey = config.accessKey;
     const versionUrl = accessKey ? `${apiUrl}/api/version?access_key=${accessKey}` : `${apiUrl}/api/version`;
     fetch(versionUrl)
       .then((res) => res.json())
       .then((data: { version?: string }) => setBackendVersion(data.version ?? null))
       .catch(() => setBackendVersion('unknown'));
-  }, [config, apiUrl, accessKey]);
+  }, [currentFacility]);
 
-  if (!currentInverter) return null;
+  if (!currentFacility || !currentFacility.currentInverter) return null;
 
+  const { selectedInverter, currentInverter, inverterLastSeen } = currentFacility;
   const lastSeen = selectedInverter ? inverterLastSeen[selectedInverter] : null;
   const stale = isStale(lastSeen);
 
@@ -42,6 +46,10 @@ function SystemInfo() {
           System Info
         </Typography>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+            <Typography variant="body2" sx={{ color: colors.textSecondary }}>Facility</Typography>
+            <Typography variant="body2" sx={{ color: colors.text }}>{currentFacility.config.facilityName}</Typography>
+          </Box>
           <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
             <Typography variant="body2" sx={{ color: colors.textSecondary }}>Serial</Typography>
             <Typography variant="body2" sx={{ color: colors.text }}>{selectedInverter ?? 'N/A'}</Typography>

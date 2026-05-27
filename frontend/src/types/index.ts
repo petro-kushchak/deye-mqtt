@@ -34,14 +34,19 @@ export interface InverterMetrics {
   daily_battery_charge?: number;
 }
 
-export interface AppConfig {
+export interface FacilityConfig {
   backendUrl: string;
   backendWsUrl: string;
   accessKey: string;
   facilityName: string;
 }
 
-export interface InverterState {
+export type AppConfig = FacilityConfig[];
+
+export interface FacilityState {
+  config: FacilityConfig;
+  connected: boolean;
+  error: string | null;
   inverters: Record<string, InverterMetrics>;
   selectedInverter: string | null;
   currentInverter: InverterMetrics | null;
@@ -51,10 +56,14 @@ export interface InverterState {
   inverterLastSeen: Record<string, Date>;
 }
 
-export interface WebSocketState {
-  connected: boolean;
-  error: string | null;
-  lastMessage: unknown;
+export interface InverterContextValue {
+  configLoading: boolean;
+  facilities: FacilityState[];
+  selectedFacility: number;
+  selectFacility: (index: number) => void;
+  selectFacilityInverter: (facilityIndex: number, serial: string) => void;
+  currentFacility: FacilityState | null;
+  configs: FacilityConfig[];
 }
 
 export interface DataPoint {
@@ -64,46 +73,4 @@ export interface DataPoint {
   total_load_power: number;
   grid_power: number;
   battery_soc: number;
-}
-
-export interface UseConfigReturn {
-  config: AppConfig | null;
-  loading: boolean;
-  apiUrl: string;
-  accessKey: string;
-  wsUrlWithKey: string;
-  facilityName: string;
-}
-
-export interface UseWebSocketReturn {
-  connected: boolean;
-  error: string | null;
-  lastMessage: unknown;
-  reconnect: () => void;
-}
-
-export interface UseInverterDataReturn {
-  inverters: Record<string, InverterMetrics>;
-  selectedInverter: string | null;
-  selectInverter: (serial: string) => void;
-  currentInverter: InverterMetrics | null;
-  inverterSerials: string[];
-  hasMetrics: boolean;
-  lastUpdate: Date | null;
-  inverterLastSeen: Record<string, Date>;
-}
-
-export interface InverterContextValue extends Omit<UseConfigReturn, 'loading'> {
-  configLoading: boolean;
-  connected: boolean;
-  wsError: string | null;
-  reconnect: () => void;
-  inverters: Record<string, InverterMetrics>;
-  selectedInverter: string | null;
-  selectInverter: (serial: string) => void;
-  currentInverter: InverterMetrics | null;
-  inverterSerials: string[];
-  hasMetrics: boolean;
-  lastUpdate: Date | null;
-  inverterLastSeen: Record<string, Date>;
 }

@@ -1,4 +1,4 @@
-import { AppBar, Toolbar, Typography, Chip, Tabs, Tab } from '@mui/material';
+import { AppBar, Toolbar, Typography, Chip } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
 import { useInverter } from '../context/InverterContext';
 import { useTheme } from '../context/ThemeContext';
@@ -6,43 +6,45 @@ import { getRunningStatusLabel } from '../utils/formatters';
 import ThemeToggle from './ThemeToggle';
 
 function Header() {
-  const { connected, lastUpdate, selectedInverter, selectInverter, inverterSerials, config, currentInverter } = useInverter();
+  const { currentFacility, configs, selectedFacility } = useInverter();
   const { colors } = useTheme();
 
+  const lastUpdate = currentFacility?.lastUpdate ?? null;
+  const currentInverter = currentFacility?.currentInverter ?? null;
+  const facilityName = currentFacility?.config?.facilityName ?? 'Solar Dashboard';
+
   const runningStatus = currentInverter?.['Running Status'] ?? 'Stand-by';
-  const { cardAlt: bgColor, border: borderColor } = colors;
 
   return (
-    <AppBar 
-      position="fixed" 
+    <AppBar
+      position="fixed"
       elevation={0}
-      sx={{ 
-        bgcolor: bgColor, 
-        borderBottom: `1px solid ${borderColor}`,
+      sx={{
+        bgcolor: colors.cardAlt,
+        borderBottom: `1px solid ${colors.border}`,
         zIndex: (theme) => theme.zIndex.appBar,
       }}
     >
-      <Toolbar sx={{ bgcolor: bgColor }}>
+      <Toolbar sx={{ bgcolor: colors.cardAlt }}>
         <Typography variant="h6" sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', gap: 1, color: colors.text }}>
+          <HomeIcon sx={{ color: colors.warning }} />
+          {facilityName}
+          {configs.length > 1 && (
+            <Typography variant="caption" sx={{ color: colors.textSecondary, ml: 0.5 }}>
+              ({selectedFacility + 1}/{configs.length})
+            </Typography>
+          )}
+        </Typography>
+        {currentInverter && (
           <Chip
-            size="small"
-            label={connected ? 'Connected' : 'Disconnected'}
-            sx={{ 
-              bgcolor: connected ? colors.success : colors.error,
-              color: '#fff'
+            label={getRunningStatusLabel(runningStatus)}
+            sx={{
+              mr: 2,
+              bgcolor: runningStatus === 'Normal' ? colors.success : runningStatus === 'FAULT' ? colors.error : colors.disabled,
+              color: '#fff',
             }}
           />
-          <HomeIcon sx={{ color: colors.warning, ml: 1 }} />
-          {config?.facilityName? config?.facilityName:  'Solar Dashboard' }
-        </Typography>
-        <Chip
-          label={getRunningStatusLabel(runningStatus)}
-          sx={{ 
-            mr: 2, 
-            bgcolor: runningStatus === 'Normal' ? colors.success : runningStatus === 'FAULT' ? colors.error : colors.disabled,
-            color: '#fff'
-          }}
-        />
+        )}
         {lastUpdate && (
           <Typography variant="caption" sx={{ color: colors.textSecondary, mr: 1 }}>
             {lastUpdate.toLocaleTimeString()}
@@ -50,24 +52,6 @@ function Header() {
         )}
         <ThemeToggle />
       </Toolbar>
-      {inverterSerials.length > 1 && (
-        <Tabs
-          value={selectedInverter}
-          onChange={(_e, val) => selectInverter(val)}
-          sx={{ bgcolor: colors.cardAlt, minHeight: 40 }}
-          textColor="primary"
-          indicatorColor="primary"
-        >
-          {inverterSerials.map((serial) => (
-            <Tab
-              key={serial}
-              value={serial}
-              label={serial.slice(-6)}
-              sx={{ minHeight: 40, fontSize: '0.8rem' }}
-            />
-          ))}
-        </Tabs>
-      )}
     </AppBar>
   );
 }

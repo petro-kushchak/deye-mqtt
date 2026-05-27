@@ -1,26 +1,34 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
-import { useInverterData, getInverterStatus, isStale, getTimeAgo } from '../hooks/useInverterData';
+import { createFacilityState, processFacilityMessage } from '../hooks/useFacilityConnection';
+import { getInverterStatus, isStale, getTimeAgo } from '../hooks/useInverterData';
+import type { FacilityConfig } from '../types';
 
-describe('useInverterData', () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
+const mockConfig: FacilityConfig = {
+  backendUrl: 'http://localhost:8000',
+  backendWsUrl: '',
+  accessKey: '',
+  facilityName: 'Test Facility',
+};
+
+describe('createFacilityState', () => {
+  it('should create initial state from config', () => {
+    const state = createFacilityState(mockConfig);
+    expect(state.config.facilityName).toBe('Test Facility');
+    expect(state.connected).toBe(false);
+    expect(state.inverters).toEqual({});
+    expect(state.hasMetrics).toBe(false);
   });
+});
 
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
-  it('should initialize with empty state', () => {
-    const { result } = renderHook(() => useInverterData(null, false));
-    
-    expect(result.current.inverters).toEqual({});
-    expect(result.current.selectedInverter).toBeNull();
-    expect(result.current.currentInverter).toBeNull();
-    expect(result.current.hasMetrics).toBe(false);
+describe('processFacilityMessage', () => {
+  it('should return same state for null message', () => {
+    const state = createFacilityState(mockConfig);
+    const result = processFacilityMessage(state, null);
+    expect(result).toBe(state);
   });
 
   it('should process valid message and set inverter', () => {
+    const state = createFacilityState(mockConfig);
     const message = [{
       serial: 'TEST123',
       pv_power: 1000,
@@ -38,51 +46,37 @@ describe('useInverterData', () => {
       'Running Status': 'Normal',
     }];
 
-    const { result } = renderHook(() => useInverterData(message, false));
-    
-    expect(result.current.inverters['TEST123']).toBeDefined();
-    expect(result.current.selectedInverter).toBe('TEST123');
-    expect(result.current.currentInverter?.pv_power).toBe(1000);
-    expect(result.current.hasMetrics).toBe(true);
+    const result = processFacilityMessage(state, message);
+    expect(result.inverters['TEST123']).toBeDefined();
+    expect(result.selectedInverter).toBe('TEST123');
+    expect(result.currentInverter?.pv_power).toBe(1000);
+    expect(result.hasMetrics).toBe(true);
+    expect(result.lastUpdate).toBeInstanceOf(Date);
   });
 
-  it('should handle invalid message gracefully', () => {
-    const { result } = renderHook(() => useInverterData('invalid', false));
-    
-    expect(result.current.inverters).toEqual({});
-    expect(result.current.hasMetrics).toBe(false);
+  it('should handle empty array', () => {
+    const state = createFacilityState(mockConfig);
+    const result = processFacilityMessage(state, []);
+    expect(result.inverters).toEqual({});
+    expect(result.hasMetrics).toBe(false);
   });
 
-  it('should handle empty array message', () => {
-    const { result } = renderHook(() => useInverterData([], false));
-    
-    expect(result.current.inverters).toEqual({});
-    expect(result.current.hasMetrics).toBe(false);
-  });
-
-  it('should select inverter', () => {
+  it('should select first inverter when none selected', () => {
+    const state = createFacilityState(mockConfig);
     const message = [
       { serial: 'INV1', pv_power: 100, pv1_power: 50, pv2_power: 50, pv1_voltage: 100, pv2_voltage: 100, pv1_current: 1, pv2_current: 1, battery_soc: 50, battery_power: 0, grid_power: 0, total_load_power: 0, battery_status: 'Stand-by', 'Running Status': 'Stand-by' },
-      { serial: 'INV2', pv_power: 200, pv1_power: 100, pv2_power: 100, pv1_voltage: 200, pv2_voltage: 200, pv1_current: 1, pv2_current: 1, battery_soc: 60, battery_power: 0, grid_power: 0, total_load_power: 0, battery_status: 'Stand-by', 'Running Status': 'Stand-by' },
     ];
 
-    const { result } = renderHook(() => useInverterData(message, false));
-    
-    expect(result.current.selectedInverter).toBe('INV1');
-    
-    act(() => {
-      result.current.selectInverter('INV2');
-    });
-    
-    expect(result.current.selectedInverter).toBe('INV2');
+    const result = processFacilityMessage(state, message);
+    expect(result.selectedInverter).toBe('INV1');
   });
 
   it('should enrich metrics with defaults', () => {
+    const state = createFacilityState(mockConfig);
     const message = [{ serial: 'TEST' }];
-    
-    const { result } = renderHook(() => useInverterData(message, false));
-    
-    const inverter = result.current.inverters['TEST'];
+
+    const result = processFacilityMessage(state, message);
+    const inverter = result.inverters['TEST'];
     expect(inverter.pv_power).toBe(0);
     expect(inverter.pv1_power).toBe(0);
     expect(inverter.battery_soc).toBe(0);

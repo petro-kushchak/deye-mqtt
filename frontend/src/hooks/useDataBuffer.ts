@@ -18,12 +18,14 @@ interface HistoryEntry {
   c: number;
 }
 
-export function useDataBuffer(apiUrl: string, accessKey: string) {
+const buffers = new Map<string, DataPoint[]>();
+
+export function useDataBuffer(apiUrl: string, accessKey: string, facilityKey: string = 'default') {
   const [timeRange, setTimeRange] = useState(() => {
     const saved = localStorage.getItem(RANGE_STORAGE_KEY);
     return saved ? parseInt(saved, 10) : 1;
   });
-  const [dataBuffer, setDataBuffer] = useState<DataPoint[]>([]);
+  const [dataBuffer, setDataBuffer] = useState<DataPoint[]>(() => buffers.get(facilityKey) ?? []);
   const lastRef = useRef<Pick<InverterMetrics, 'pv_power' | 'battery_power' | 'total_load_power' | 'grid_power' | 'battery_soc'> | null>(null);
 
   useEffect(() => {
@@ -46,11 +48,12 @@ export function useDataBuffer(apiUrl: string, accessKey: string) {
           grid_power: entry.g,
           battery_soc: entry.c,
         }));
+        buffers.set(facilityKey, points);
         setDataBuffer(points);
       })
       .catch(() => {});
     return () => { cancelled = true; };
-  }, [historyUrl]);
+  }, [historyUrl, facilityKey]);
 
   const addDataPoint = useCallback((metrics: Partial<InverterMetrics>) => {
     const { pv_power, battery_power, total_load_power, grid_power, battery_soc } = metrics;
@@ -73,17 +76,19 @@ export function useDataBuffer(apiUrl: string, accessKey: string) {
     setDataBuffer(prev => {
       const lastIdx = prev.length - 1;
       if (lastIdx >= 0 && getMinuteBucket(prev[lastIdx].timestamp) === bucket) {
-        const updated = [...prev];
+        const updated = [...prev] as DataPoint[];
         updated[lastIdx] = { timestamp: now, pv_power: pv, battery_power: bat, total_load_power: load, grid_power: grid, battery_soc: soc };
+        buffers.set(facilityKey, updated);
         return updated;
       }
 
       const cutoff = Date.now() - MAX_HOURS * 60 * 60 * 1000;
-      const cleaned = prev.filter(p => p.timestamp.getTime() >= cutoff);
+      const cleaned = prev.filter(p => p.timestamp.getTime() >= cutoff) as DataPoint[];
       cleaned.push({ timestamp: now, pv_power: pv, battery_power: bat, total_load_power: load, grid_power: grid, battery_soc: soc });
+      buffers.set(facilityKey, cleaned);
       return cleaned;
     });
-  }, []);
+  }, [facilityKey]);
 
   const filteredData = useMemo(() => {
     if (dataBuffer.length === 0) return [];

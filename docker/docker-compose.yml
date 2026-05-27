@@ -33,10 +33,12 @@ services:
     ports:
       - "${FRONTEND_PORT:-8070}:80"
     environment:
-      - BACKEND_URL=${BACKEND_URL:-http://deye-backend:8000}
-      - BACKEND_WS_URL=${BACKEND_WS_URL:-}
-      - BACKEND_ACCESS_KEY=${BACKEND_ACCESS_KEY:-${ACCESS_KEY:-}}
-      - FACILITY_NAME=${FACILITY_NAME:-}
+      # Multi-facility support: use indexed env vars
+      # Add BACKEND_URL2, BACKEND_WS_URL2, BACKEND_ACCESS_KEY2, FACILITY_NAME2 for a second facility, etc.
+      - BACKEND_URL1=${BACKEND_URL1:-http://deye-backend:8000}
+      - BACKEND_WS_URL1=${BACKEND_WS_URL1:-}
+      - BACKEND_ACCESS_KEY1=${BACKEND_ACCESS_KEY1:-${ACCESS_KEY:-}}
+      - FACILITY_NAME1=${FACILITY_NAME1:-Facility 1}
     labels:
       - glance.name=Deye Frontend
       - glance.hide=false

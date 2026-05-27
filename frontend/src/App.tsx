@@ -1,223 +1,124 @@
 import { useState } from 'react';
 import { ThemeProvider as MuiThemeProvider, CssBaseline } from '@mui/material';
-import { Box, Container, Grid, Typography, Alert, CircularProgress, Collapse, IconButton } from '@mui/material';
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-import SolarPowerIcon from '@mui/icons-material/SolarPower';
-import BatteryChargingFullIcon from '@mui/icons-material/BatteryChargingFull';
-import GridOnIcon from '@mui/icons-material/GridOn';
-import HomeIcon from '@mui/icons-material/Home';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import { Box, Container, Typography, Tabs, Tab, CircularProgress, IconButton } from '@mui/material';
+import UnfoldMoreIcon from '@mui/icons-material/UnfoldMore';
+import UnfoldLessIcon from '@mui/icons-material/UnfoldLess';
 import { lightTheme, darkTheme } from './theme';
 import { ThemeProvider as AppThemeProvider, useTheme } from './context/ThemeContext';
 import { InverterProvider, useInverter } from './context/InverterContext';
-import EnergyFlow from './components/EnergyFlow';
-import EnergyHistory from './components/EnergyHistory';
-import StatCard from './components/StatCard';
+import FacilitySummaryBar from './components/FacilitySummaryBar';
+import FacilityDashboard from './components/FacilityDashboard';
 import Header from './components/Header';
-import PVStrings from './components/PVStrings';
-import SystemInfo from './components/SystemInfo';
-import { formatPower, getGridStatus, getBatteryStatusLabel, getBatteryStatusColor } from './utils/formatters';
 
-function Dashboard() {
-  const { hasMetrics, currentInverter } = useInverter();
+function AppContent() {
+  const { configLoading, facilities, selectedFacility, selectFacility } = useInverter();
   const { colors } = useTheme();
+
   const [openPower, setOpenPower] = useState(() => localStorage.getItem('deye-section-power') !== 'false');
   const [openHistory, setOpenHistory] = useState(() => localStorage.getItem('deye-section-history') !== 'false');
   const [openPV, setOpenPV] = useState(() => localStorage.getItem('deye-section-pv') !== 'false');
   const [openStats, setOpenStats] = useState(() => localStorage.getItem('deye-section-stats') !== 'false');
 
-  const SectionHeader = ({ title, open, onToggle, storageKey }: { title: string; open: boolean; onToggle: () => void; storageKey: string }) => (
-    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-      <Typography variant="h5" sx={{ flexGrow: 1 }}>
-        {title}
-      </Typography>
-      <IconButton onClick={() => { onToggle(); localStorage.setItem(storageKey, (!open).toString()); }} size="small" sx={{ color: colors.textSecondary }}>
-        {open ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-      </IconButton>
-    </Box>
-  );
+  const allOpen = openPower && openHistory && openPV && openStats;
 
-  if (!hasMetrics) {
-    return (
-      <Alert
-        severity="warning"
-        sx={{ mb: 3 }}
-        icon={<WarningAmberIcon fontSize="inherit" />}
-      >
-        No inverter data available. Make sure the inverter is connected.
-      </Alert>
-    );
-  }
+  const toggleAll = () => {
+    const next = !allOpen;
+    setOpenPower(next);
+    setOpenHistory(next);
+    setOpenPV(next);
+    setOpenStats(next);
+    localStorage.setItem('deye-section-power', String(next));
+    localStorage.setItem('deye-section-history', String(next));
+    localStorage.setItem('deye-section-pv', String(next));
+    localStorage.setItem('deye-section-stats', String(next));
+  };
 
-  const gridStatus = getGridStatus(currentInverter?.grid_power ?? 0);
-  const phases = currentInverter?.phases ?? 3;
-  const loadSubLabel = [
-    ...(phases >= 1 ? [`L1: ${formatPower(currentInverter?.load_power_l1)}W`] : []),
-    ...(phases >= 2 ? [`L2: ${formatPower(currentInverter?.load_power_l2)}W`] : []),
-    ...(phases >= 3 ? [`L3: ${formatPower(currentInverter?.load_power_l3)}W`] : []),
-  ].join(' | ');
-  const batteryPower = currentInverter?.battery_power ?? 0;
-  const batteryLabel = getBatteryStatusLabel(batteryPower);
-  const batteryColor = getBatteryStatusColor(batteryPower);
-
-  return (
-    <>
-      <Grid container spacing={3}>
-        <Grid item xs={12}>
-          <SectionHeader title="Power Overview" open={openPower} onToggle={() => setOpenPower(!openPower)} storageKey="deye-section-power" />
-        </Grid>
-
-        <Collapse in={openPower} sx={{ width: '100%' }}>
-          <Grid container spacing={3} sx={{ pl: 2, pr: 2 }}>
-            <Grid item xs={12} md={6} lg={3}>
-              <StatCard
-                icon={<SolarPowerIcon sx={{ fontSize: 40 }} />}
-                label="Solar Production"
-                value={formatPower(currentInverter?.pv_power)}
-                unit="W"
-                color={colors.warning}
-                subLabel={`PV1: ${formatPower(currentInverter?.pv1_power)}W | PV2: ${formatPower(currentInverter?.pv2_power)}W`}
-              />
-            </Grid>
-
-            <Grid item xs={12} md={6} lg={3}>
-              <StatCard
-                icon={<BatteryChargingFullIcon sx={{ fontSize: 40 }} />}
-                label="Battery"
-                value={formatPower(Math.abs(batteryPower))}
-                unit="W"
-                color={batteryColor}
-                subLabel={`SOC: ${formatPower(currentInverter?.battery_soc)}% | ${batteryLabel}`}
-              />
-            </Grid>
-
-            <Grid item xs={12} md={6} lg={3}>
-              <StatCard
-                icon={<GridOnIcon sx={{ fontSize: 40 }} />}
-                label="Grid"
-                value={formatPower(Math.abs(currentInverter?.grid_power ?? 0))}
-                unit="W"
-                color={gridStatus.color}
-                subLabel={gridStatus.label}
-              />
-            </Grid>
-
-            <Grid item xs={12} md={6} lg={3}>
-              <StatCard
-                icon={<HomeIcon sx={{ fontSize: 40 }} />}
-                label="Home Load"
-                value={formatPower(currentInverter?.total_load_power)}
-                unit="W"
-                color={colors.info}
-                subLabel={loadSubLabel || "Current consumption"}
-              />
-            </Grid>
-
-            <Grid item xs={12} xl={8}>
-              <EnergyFlow data={currentInverter ?? {}} />
-            </Grid>
-
-            <Grid item xs={12} xl={4}>
-              <SystemInfo />
-            </Grid>
-          </Grid>
-        </Collapse>
-
-        <Grid item xs={12}>
-          <SectionHeader title="Energy History" open={openHistory} onToggle={() => setOpenHistory(!openHistory)} storageKey="deye-section-history" />
-        </Grid>
-        <EnergyHistory open={openHistory} />
-
-        <Grid item xs={12}>
-          <SectionHeader title="PV Strings" open={openPV} onToggle={() => setOpenPV(!openPV)} storageKey="deye-section-pv" />
-        </Grid>
-
-        <Collapse in={openPV} sx={{ width: '100%' }}>
-          <PVStrings />
-        </Collapse>
-
-        <Grid item xs={12}>
-          <SectionHeader title="Energy Statistics" open={openStats} onToggle={() => setOpenStats(!openStats)} storageKey="deye-section-stats" />
-        </Grid>
-
-        <Collapse in={openStats} sx={{ width: '100%' }}>
-          <Grid container spacing={3} sx={{ pl: 2, pr: 2 }}>
-            <Grid item xs={12} md={6} lg={3}>
-              <StatCard
-                icon={<SolarPowerIcon sx={{ fontSize: 40 }} />}
-                label="Daily Production"
-                value={formatPower(currentInverter?.['daily_production'])}
-                unit="kWh"
-                color={colors.warning}
-              />
-            </Grid>
-
-            <Grid item xs={12} md={6} lg={3}>
-              <StatCard
-                icon={<SolarPowerIcon sx={{ fontSize: 40 }} />}
-                label="Total Production"
-                value={formatPower(((currentInverter?.['total_production'] ?? 0) / 1000))}
-                unit="MWh"
-                color={colors.warning}
-                subLabel="All time"
-              />
-            </Grid>
-
-            <Grid item xs={12} md={6} lg={3}>
-              <StatCard
-                icon={<HomeIcon sx={{ fontSize: 40 }} />}
-                label="Daily Load"
-                value={formatPower(currentInverter?.['daily_load_consumption'])}
-                unit="kWh"
-                color={colors.info}
-              />
-            </Grid>
-
-            <Grid item xs={12} md={6} lg={3}>
-              <StatCard
-                icon={<BatteryChargingFullIcon sx={{ fontSize: 40 }} />}
-                label="Daily Battery Charge"
-                value={formatPower(currentInverter?.['daily_battery_charge'])}
-                unit="kWh"
-                color={colors.success}
-              />
-            </Grid>
-          </Grid>
-        </Collapse>
-      </Grid>
-    </>
-  );
-}
-
-function LoadingScreen() {
-  return (
-    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column', gap: 2 }}>
-      <CircularProgress />
-      <Typography>Connecting to inverter...</Typography>
-    </Box>
-  );
-}
-
-function AppContent() {
-  const { configLoading, connected, hasMetrics, inverterSerials } = useInverter();
-
-  if (configLoading || (!connected && !hasMetrics)) {
+  if (configLoading) {
     return (
       <>
         <CssBaseline />
-        <LoadingScreen />
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column', gap: 2 }}>
+          <CircularProgress />
+          <Typography>Loading configuration...</Typography>
+        </Box>
       </>
     );
   }
 
+  const hasAnyData = facilities.some((f) => f.hasMetrics || f.connected);
+  const currentFacility = facilities[selectedFacility] ?? null;
+
+  const sectionToggles = {
+    onTogglePower: () => { const v = !openPower; setOpenPower(v); localStorage.setItem('deye-section-power', String(v)); },
+    onToggleHistory: () => { const v = !openHistory; setOpenHistory(v); localStorage.setItem('deye-section-history', String(v)); },
+    onTogglePV: () => { const v = !openPV; setOpenPV(v); localStorage.setItem('deye-section-pv', String(v)); },
+    onToggleStats: () => { const v = !openStats; setOpenStats(v); localStorage.setItem('deye-section-stats', String(v)); },
+  };
+
   return (
     <>
       <CssBaseline />
-      <Box sx={{ minHeight: '100vh', pb: 4 }}>
+      <Box sx={{ minHeight: '100vh', pb: 4, pt: 8 }}>
         <Header />
-        <Container maxWidth="xl" sx={{ mt: inverterSerials.length > 1 ? 16 : 12 }}>
-          <Dashboard />
+        <FacilitySummaryBar />
+        <Container maxWidth="xl" sx={{ mt: 2 }}>
+
+          {facilities.length > 1 && (
+            <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3, mt: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <Tabs
+                  value={selectedFacility}
+                  onChange={(_e, val) => selectFacility(val)}
+                  textColor="primary"
+                  indicatorColor="primary"
+                  sx={{ flexGrow: 1 }}
+                >
+                  {facilities.map((f, i) => (
+                    <Tab
+                      key={i}
+                      label={
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Box
+                            sx={{
+                              width: 8,
+                              height: 8,
+                              borderRadius: '50%',
+                              bgcolor: f.connected ? colors.success : colors.error,
+                              flexShrink: 0,
+                            }}
+                          />
+                          {f.config.facilityName}
+                        </Box>
+                      }
+                      sx={{ textTransform: 'none', fontWeight: 600, minHeight: 48 }}
+                    />
+                  ))}
+                </Tabs>
+                <IconButton onClick={toggleAll} size="small" sx={{ color: colors.textSecondary, ml: 1 }} title={allOpen ? 'Collapse all' : 'Expand all'}>
+                  {allOpen ? <UnfoldLessIcon /> : <UnfoldMoreIcon />}
+                </IconButton>
+              </Box>
+            </Box>
+          )}
+
+          {!hasAnyData ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column', gap: 2, py: 8 }}>
+              <CircularProgress />
+              <Typography variant="body1" sx={{ color: colors.textSecondary }}>
+                Connecting to facilities...
+              </Typography>
+            </Box>
+          ) : currentFacility ? (
+            <FacilityDashboard
+              key={selectedFacility}
+              facility={currentFacility}
+              openPower={openPower}
+              openHistory={openHistory}
+              openPV={openPV}
+              openStats={openStats}
+              {...sectionToggles}
+            />
+          ) : null}
         </Container>
       </Box>
     </>

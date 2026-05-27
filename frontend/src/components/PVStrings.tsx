@@ -4,10 +4,12 @@ import { useTheme } from '../context/ThemeContext';
 import { formatVoltage, formatCurrent, formatPower } from '../utils/formatters';
 
 function PVStrings() {
-  const { currentInverter } = useInverter();
+  const { currentFacility } = useInverter();
   const { colors } = useTheme();
 
-  if (!currentInverter) return null;
+  if (!currentFacility?.currentInverter) return null;
+
+  const currentInverter = currentFacility.currentInverter;
 
   const pv1Data = {
     voltage: currentInverter.pv1_voltage,
@@ -23,8 +25,8 @@ function PVStrings() {
 
   const renderPVCard = (label: string, data: { voltage: number; current: number; power: number }) => (
     <Grid item xs={12} md={6} lg={3}>
-      <Card sx={{ 
-        height: '100%', 
+      <Card sx={{
+        height: '100%',
         bgcolor: colors.cardAlt,
         transition: 'transform 0.2s, box-shadow 0.2s',
         '&:hover': {

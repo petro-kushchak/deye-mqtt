@@ -1,50 +1,59 @@
 import { useState, useEffect } from 'react';
-import type { AppConfig, UseConfigReturn } from '../types';
+import type { FacilityConfig } from '../types';
 
-const DEFAULT_CONFIG: AppConfig = {
-  backendUrl: '',
-  backendWsUrl: '',
-  accessKey: '',
-  facilityName: '',
-};
+function buildWsUrl(config: FacilityConfig): string {
+  if (config.backendWsUrl) return config.backendWsUrl;
+  if (config.backendUrl) return config.backendUrl.replace(/^http/, 'ws');
+  return `ws://${window.location.host}/ws`;
+}
 
-export function useConfig(): UseConfigReturn {
-  const [config, setConfig] = useState<AppConfig | null>(null);
+function buildWsUrlWithKey(config: FacilityConfig): string {
+  const wsUrl = buildWsUrl(config);
+  return config.accessKey
+    ? `${wsUrl}${wsUrl.includes('?') ? '&' : '?'}access_key=${config.accessKey}`
+    : wsUrl;
+}
+
+export function enrichedFacilityConfig(raw: Partial<FacilityConfig>): FacilityConfig {
+  return {
+    backendUrl: raw.backendUrl ?? '',
+    backendWsUrl: raw.backendWsUrl ?? '',
+    accessKey: raw.accessKey ?? '',
+    facilityName: raw.facilityName ?? 'Unknown',
+  };
+}
+
+export function useConfig() {
+  const [facilities, setFacilities] = useState<FacilityConfig[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('[useConfig] Fetching config.json...');
     fetch('/config.json', { cache: 'no-store' })
       .then((res) => {
-        console.log('[useConfig] Response status:', res.status, res.statusText);
-        if (res.status === 304 || res.status === 200) {
-          return res.json();
-        }
+        if (res.status === 304 || res.status === 200) return res.json();
         throw new Error(`HTTP ${res.status}`);
       })
-      .then((data: Partial<AppConfig>) => {
-        console.log('[useConfig] Loaded config:', data);
-        setConfig({ ...DEFAULT_CONFIG, ...data });
+      .then((data: unknown) => {
+        if (Array.isArray(data)) {
+          setFacilities(data.map(enrichedFacilityConfig));
+        } else if (data && typeof data === 'object') {
+          setFacilities([enrichedFacilityConfig(data as Partial<FacilityConfig>)]);
+        } else {
+          setFacilities([]);
+        }
         setLoading(false);
       })
       .catch((err) => {
         console.error('[useConfig] Failed to load config:', err);
-        setConfig(DEFAULT_CONFIG);
+        setFacilities([]);
         setLoading(false);
       });
   }, []);
 
-  const apiUrl = config?.backendUrl ?? '';
-  const accessKey = config?.accessKey ?? '';
-  const wsUrl = config?.backendWsUrl ?? (config?.backendUrl ? config.backendUrl.replace(/^http/, 'ws') : `ws://${window.location.host}/ws`);
-  const wsUrlWithKey = accessKey ? `${wsUrl}${wsUrl.includes('?') ? '&' : '?'}access_key=${accessKey}` : wsUrl;
-
   return {
-    config,
+    facilities,
     loading,
-    apiUrl,
-    accessKey,
-    wsUrlWithKey,
-    facilityName: config?.facilityName ?? '',
+    facilityCount: facilities.length,
+    buildWsUrlWithKey,
   };
 }
