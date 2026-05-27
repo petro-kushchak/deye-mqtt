@@ -16,6 +16,7 @@ class ServiceConfig(BaseSettings):
     inverter_ip: str = Field(default="", validation_alias="INVERTER_IP")
     inverter_serial: int = Field(default=12345678, validation_alias="INVERTER_SERIAL")
     inverter_definition: str = Field(default="deye_hybrid.yaml", validation_alias="INVERTER_DEFINITION")
+    allowed_origins: str = Field(default="*", validation_alias="CORS_ORIGINS")
 
     @property
     def metrics_to_publish(self) -> Dict[str, str]:

@@ -43,18 +43,17 @@ function SectionHeader({ title, icon, open, onToggle, storageKey }: {
 }) {
   const { colors } = useTheme();
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+    <Box
+      sx={{ display: 'flex', alignItems: 'center', mb: 2, cursor: 'pointer', borderBottom: 1, borderColor: 'divider', pb: 1 }}
+      onClick={() => { onToggle(); localStorage.setItem(storageKey, (!open).toString()); }}
+    >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexGrow: 1 }}>
         {icon}
         <Typography variant="h5">
           {title}
         </Typography>
       </Box>
-      <IconButton
-        onClick={() => { onToggle(); localStorage.setItem(storageKey, (!open).toString()); }}
-        size="small"
-        sx={{ color: colors.textSecondary }}
-      >
+      <IconButton size="small" sx={{ color: colors.textSecondary }}>
         {open ? <ExpandLessIcon /> : <ExpandMoreIcon />}
       </IconButton>
     </Box>

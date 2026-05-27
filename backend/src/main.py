@@ -285,6 +285,7 @@ async def main() -> None:
         host="0.0.0.0",
         port=8000,
         log_level="info",
+        proxy_headers=True,
     )
     server = uvicorn.Server(config)
     

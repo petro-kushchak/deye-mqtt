@@ -16,6 +16,7 @@ services:
       - INVERTER_SERIAL=3510378990
       - INVERTER_DEFINITION=deye_hybrid.yaml
       - ACCESS_KEY=${ACCESS_KEY:-}
+      - CORS_ORIGINS=${CORS_ORIGINS:-*}
     labels:
       - glance.name=Deye Backend
       - glance.hide=false

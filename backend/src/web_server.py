@@ -41,6 +41,7 @@ def sanitize_topic_component(component: str) -> str:
 
 
 ACCESS_KEY = os.environ.get("ACCESS_KEY", "")
+CORS_ORIGINS = os.environ.get("CORS_ORIGINS", "*")
 
 def verify_access_key(key: str | None) -> bool:
     if not ACCESS_KEY:
@@ -198,6 +199,11 @@ class StatusResponse(BaseModel):
     metrics: dict[str, list[dict]]
 
 
+def _parse_origins(raw: str) -> list[str]:
+    origins = [o.strip() for o in raw.replace(",", " ").split() if o.strip()]
+    return ["*"] if "*" in origins else origins
+
+
 def get_application() -> FastAPI:
     application = FastAPI(
         title="Deye Inverter Status API",
@@ -206,7 +212,7 @@ def get_application() -> FastAPI:
 
     application.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=_parse_origins(CORS_ORIGINS),
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -287,6 +293,14 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
         log.warning("WebSocket connection rejected: invalid access key from %s", websocket.client)
         await websocket.close(code=4001, reason="Invalid access key")
         return
+
+    allowed = _parse_origins(CORS_ORIGINS)
+    if "*" not in allowed:
+        origin = websocket.headers.get("origin")
+        if origin and origin not in allowed:
+            log.warning("WebSocket connection rejected: origin '%s' not allowed from %s", origin, websocket.client)
+            await websocket.close(code=4001, reason="Origin not allowed")
+            return
 
     log.info("New WebSocket connection: %s", websocket.client)
     cached_payload = manager.get_cached_payload()
