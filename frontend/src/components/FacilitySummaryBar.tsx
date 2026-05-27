@@ -81,7 +81,7 @@ function MiniCard({ facility, index, selected, onClick }: MiniCardProps) {
               value={formatPower(Math.abs(batteryPower))}
               unit="W"
               color={batteryColor}
-              sub={`${formatPower(inv?.battery_soc)}%`}
+              sub={`${batteryLabel} | ${formatPower(inv?.battery_soc)}%`}
             />
             <MiniStat
               icon={<GridOnIcon sx={{ fontSize: 20 }} />}

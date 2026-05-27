@@ -1,14 +1,14 @@
 [
   {
-    "backendUrl": "http://192.168.201.2:8000",
-    "backendWsUrl": "ws://192.168.201.2:8000/ws",
+    "backendUrl": "https://deye.riviera6.pp.ua",
+    "backendWsUrl": "wss://deye.riviera6.pp.ua/ws",
     "accessKey": "cedf8286050da0f5b42236d23a0cacdc21cc61a0bbaeb3153258556270720468",
-    "facilityName": "Local"
+    "facilityName": "Riviera6"
   },
   {
-    "backendUrl": "http://192.168.201.2:8000",
-    "backendWsUrl": "ws://192.168.201.2:8000/ws",
+    "backendUrl": "https://deye.sh53a.pp.ua",
+    "backendWsUrl": "wss://deye.sh53a.pp.ua/ws",
     "accessKey": "cedf8286050da0f5b42236d23a0cacdc21cc61a0bbaeb3153258556270720468",
-    "facilityName": "Local2"
+    "facilityName": "Summer House"
   }
 ]
