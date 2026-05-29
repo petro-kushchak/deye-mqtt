@@ -49,7 +49,7 @@ function SectionHeader({ title, icon, open, onToggle, storageKey }: {
     >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexGrow: 1 }}>
         {icon}
-        <Typography variant="h5">
+        <Typography variant="subtitle1">
           {title}
         </Typography>
       </Box>
@@ -94,7 +94,7 @@ export default function FacilityDashboard({ facility, openPower, openHistory, op
   const facilityIndex = useFacilityIndex(facility);
 
   return (
-    <Grid container spacing={3}>
+    <Grid container spacing={3} sx={{ border: `1px solid ${colors.border}`, borderRadius: 1, p: 2 }}>
       {inverterSerials.length > 1 && (
         <Grid item xs={12}>
           <Tabs
